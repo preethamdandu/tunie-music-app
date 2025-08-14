@@ -1,0 +1,15 @@
+# Allow AI features on .env files
+.env: ai-enabled
+.env.*: ai-enabled
+
+# Allow AI features on Python files
+*.py: ai-enabled
+
+# Allow AI features on configuration files
+*.yml: ai-enabled
+*.yaml: ai-enabled
+*.json: ai-enabled
+*.toml: ai-enabled
+*.cfg: ai-enabled
+*.ini: ai-enabled
+

@@ -1,0 +1,186 @@
+ULTRA-DEEP PLAYLIST GENERATION TEST RESULTS
+======================================================================
+
+Total Ultra-Deep Test Scenarios: 5080
+Passed: 4556
+Failed: 524
+Success Rate: 89.69%
+Total Time: 6.38s
+
+ULTRA-DEEP CATEGORY BREAKDOWN:
+--------------------------------------------------
+AI Intelligence Deep: 2418 scenarios
+Music Theory Deep: 840 scenarios
+Global Music Deep: 1672 scenarios
+Extreme Edge Cases: 150 scenarios
+
+SAMPLE ULTRA-DEEP SCENARIOS BY CATEGORY:
+--------------------------------------------------
+
+AI Intelligence Deep:
+  1. AI Deep: Existential + Deep thinking + songs about the meaning of life
+     Mood: Existential, Activity: Deep thinking, Tracks: 20
+     Context: songs about the meaning of life
+------------------------------
+  2. AI Deep: Paradoxical + Contemplation + happy sad songs
+     Mood: Paradoxical, Activity: Contemplation, Tracks: 15
+     Context: happy sad songs
+------------------------------
+  3. AI Deep: Metaphysical + Meditation + songs about consciousness
+     Mood: Metaphysical, Activity: Meditation, Tracks: 25
+     Context: songs about consciousness
+------------------------------
+  4. AI Deep: Quantum + Physics study + songs about uncertainty
+     Mood: Quantum, Activity: Physics study, Tracks: 20
+     Context: songs about uncertainty
+------------------------------
+  5. AI Deep: Temporal + Time travel thoughts + songs about time
+     Mood: Temporal, Activity: Time travel thoughts, Tracks: 30
+     Context: songs about time
+------------------------------
+  6. AI Deep: Dimensional + Multiverse theory + songs about parallel worlds
+     Mood: Dimensional, Activity: Multiverse theory, Tracks: 15
+     Context: songs about parallel worlds
+------------------------------
+  7. AI Deep: Cosmic + Space exploration + songs about the universe
+     Mood: Cosmic, Activity: Space exploration, Tracks: 25
+     Context: songs about the universe
+------------------------------
+  8. AI Deep: Ethereal + Spiritual journey + songs about the soul
+     Mood: Ethereal, Activity: Spiritual journey, Tracks: 20
+     Context: songs about the soul
+------------------------------
+  9. AI Deep: Transcendental + Enlightenment + songs about awakening
+     Mood: Transcendental, Activity: Enlightenment, Tracks: 30
+     Context: songs about awakening
+------------------------------
+  10. AI Deep: Paradoxical Joy + Happy sadness + bittersweet happiness
+     Mood: Paradoxical Joy, Activity: Happy sadness, Tracks: 20
+     Context: bittersweet happiness
+------------------------------
+
+Music Theory Deep:
+  1. Music Theory: C Major + Happy + Studying
+     Mood: Happy, Activity: Studying, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  2. Music Theory: C Major + Happy + Creating
+     Mood: Happy, Activity: Creating, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  3. Music Theory: C Major + Happy + Analyzing
+     Mood: Happy, Activity: Analyzing, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  4. Music Theory: C Major + Happy + Performing
+     Mood: Happy, Activity: Performing, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  5. Music Theory: C Major + Sad + Studying
+     Mood: Sad, Activity: Studying, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  6. Music Theory: C Major + Sad + Creating
+     Mood: Sad, Activity: Creating, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  7. Music Theory: C Major + Sad + Analyzing
+     Mood: Sad, Activity: Analyzing, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  8. Music Theory: C Major + Sad + Performing
+     Mood: Sad, Activity: Performing, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  9. Music Theory: C Major + Energetic + Studying
+     Mood: Energetic, Activity: Studying, Tracks: 20
+     Context: songs in C Major
+------------------------------
+  10. Music Theory: C Major + Energetic + Creating
+     Mood: Energetic, Activity: Creating, Tracks: 20
+     Context: songs in C Major
+------------------------------
+
+Global Music Deep:
+  1. Global Music: Afrobeats (African) + Happy + Dancing
+     Mood: Happy, Activity: Dancing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  2. Global Music: Afrobeats (African) + Happy + Relaxing
+     Mood: Happy, Activity: Relaxing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  3. Global Music: Afrobeats (African) + Happy + Working out
+     Mood: Happy, Activity: Working out, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  4. Global Music: Afrobeats (African) + Happy + Socializing
+     Mood: Happy, Activity: Socializing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  5. Global Music: Afrobeats (African) + Energetic + Dancing
+     Mood: Energetic, Activity: Dancing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  6. Global Music: Afrobeats (African) + Energetic + Relaxing
+     Mood: Energetic, Activity: Relaxing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  7. Global Music: Afrobeats (African) + Energetic + Working out
+     Mood: Energetic, Activity: Working out, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  8. Global Music: Afrobeats (African) + Energetic + Socializing
+     Mood: Energetic, Activity: Socializing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  9. Global Music: Afrobeats (African) + Calm + Dancing
+     Mood: Calm, Activity: Dancing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+  10. Global Music: Afrobeats (African) + Calm + Relaxing
+     Mood: Calm, Activity: Relaxing, Tracks: 25
+     Context: Afrobeats music from African
+------------------------------
+
+Extreme Edge Cases:
+  1. Impossible: Impossible + Non-existent task
+     Mood: Impossible, Activity: Non-existent task, Tracks: 999999
+     Context: songs that don't exist
+------------------------------
+  2. Impossible: Paradoxical Reality + Breaking physics
+     Mood: Paradoxical Reality, Activity: Breaking physics, Tracks: 0
+     Context: songs with negative duration
+------------------------------
+  3. Impossible: Quantum Uncertainty + Schrodinger's music
+     Mood: Quantum Uncertainty, Activity: Schrodinger's music, Tracks: -1
+     Context: songs that are both dead and alive
+------------------------------
+  4. Impossible: Temporal Paradox + Time loop music
+     Mood: Temporal Paradox, Activity: Time loop music, Tracks: 999999999
+     Context: infinite duration songs
+------------------------------
+  5. Impossible: Dimensional Rift + Cross-dimensional listening
+     Mood: Dimensional Rift, Activity: Cross-dimensional listening, Tracks: imaginary
+     Context: imaginary songs
+------------------------------
+  6. Impossible: Reality Warp + Bending space-time
+     Mood: Reality Warp, Activity: Bending space-time, Tracks: None
+     Context: null songs
+------------------------------
+  7. Impossible: Logic Defying + Breaking logic
+     Mood: Logic Defying, Activity: Breaking logic, Tracks: not a number
+     Context: undefined songs
+------------------------------
+  8. Impossible: Mathematical Error + Invalid math
+     Mood: Mathematical Error, Activity: Invalid math, Tracks: error
+     Context: error songs
+------------------------------
+  9. System Stress: Stress Test 1 + System Overload + 1000 tracks
+     Mood: Stress Test 1, Activity: System Overload, Tracks: 1000
+     Context: system stress test with 1000 tracks
+------------------------------
+  10. System Stress: Stress Test 1 + System Overload + 5000 tracks
+     Mood: Stress Test 1, Activity: System Overload, Tracks: 5000
+     Context: system stress test with 5000 tracks
+------------------------------

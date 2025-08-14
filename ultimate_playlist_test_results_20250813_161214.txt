@@ -1,0 +1,170 @@
+ULTIMATE PLAYLIST GENERATION TEST RESULTS
+============================================================
+
+Total Test Scenarios: 6355
+Passed: 6003
+Failed: 352
+Success Rate: 94.46%
+Total Time: 8.02s
+
+CATEGORY BREAKDOWN:
+----------------------------------------
+Basic Combination: 800 scenarios
+Artist-Specific: 3600 scenarios
+External Discovery: 285 scenarios
+Complex Combination: 640 scenarios
+Mood Intensity: 375 scenarios
+Activity-Specific: 50 scenarios
+Seasonal: 8 scenarios
+Emotional State: 432 scenarios
+Special Occasion: 20 scenarios
+Weather: 20 scenarios
+Lifestyle: 25 scenarios
+Random Stress: 100 scenarios
+
+SAMPLE SCENARIOS BY CATEGORY:
+----------------------------------------
+
+Basic Combination:
+  1. Basic: Happy + Working + 5 tracks
+     Mood: Happy, Activity: Working, Tracks: 5
+  2. Basic: Happy + Working + 10 tracks
+     Mood: Happy, Activity: Working, Tracks: 10
+  3. Basic: Happy + Working + 15 tracks
+     Mood: Happy, Activity: Working, Tracks: 15
+  4. Basic: Happy + Working + 20 tracks
+     Mood: Happy, Activity: Working, Tracks: 20
+  5. Basic: Happy + Working + 25 tracks
+     Mood: Happy, Activity: Working, Tracks: 25
+
+Artist-Specific:
+  1. Artist: Drake + Happy + Working + 10 tracks
+     Mood: Happy, Activity: Working, Tracks: 10
+  2. Artist: Drake + Happy + Working + 15 tracks
+     Mood: Happy, Activity: Working, Tracks: 15
+  3. Artist: Drake + Happy + Working + 20 tracks
+     Mood: Happy, Activity: Working, Tracks: 20
+  4. Artist: Drake + Happy + Working + 25 tracks
+     Mood: Happy, Activity: Working, Tracks: 25
+  5. Artist: Drake + Happy + Working out + 10 tracks
+     Mood: Happy, Activity: Working out, Tracks: 10
+
+External Discovery:
+  1. Genre Discovery: K-pop + Energetic + Working out
+     Mood: Energetic, Activity: Working out, Tracks: 15
+  2. Genre Discovery: K-pop + Energetic + Working
+     Mood: Energetic, Activity: Working, Tracks: 15
+  3. Genre Discovery: K-pop + Energetic + Relaxing
+     Mood: Energetic, Activity: Relaxing, Tracks: 15
+  4. Genre Discovery: K-pop + Happy + Working out
+     Mood: Happy, Activity: Working out, Tracks: 15
+  5. Genre Discovery: K-pop + Happy + Working
+     Mood: Happy, Activity: Working, Tracks: 15
+
+Complex Combination:
+  1. Era: 80s + Nostalgic + Driving
+     Mood: Nostalgic, Activity: Driving, Tracks: 20
+  2. Era: 80s + Nostalgic + Working
+     Mood: Nostalgic, Activity: Working, Tracks: 20
+  3. Era: 80s + Nostalgic + Relaxing
+     Mood: Nostalgic, Activity: Relaxing, Tracks: 20
+  4. Era: 80s + Nostalgic + Party
+     Mood: Nostalgic, Activity: Party, Tracks: 20
+  5. Era: 80s + Nostalgic + Dancing
+     Mood: Nostalgic, Activity: Dancing, Tracks: 20
+
+Mood Intensity:
+  1. Intensity: Slightly Happy + Working
+     Mood: Slightly Happy, Activity: Working, Tracks: 10
+  2. Intensity: Slightly Happy + Working
+     Mood: Slightly Happy, Activity: Working, Tracks: 15
+  3. Intensity: Slightly Happy + Working
+     Mood: Slightly Happy, Activity: Working, Tracks: 20
+  4. Intensity: Slightly Happy + Studying
+     Mood: Slightly Happy, Activity: Studying, Tracks: 10
+  5. Intensity: Slightly Happy + Studying
+     Mood: Slightly Happy, Activity: Studying, Tracks: 15
+
+Activity-Specific:
+  1. Workout: Light Cardio
+     Mood: Light Cardio, Activity: Working out, Tracks: 20
+  2. Workout: Moderate Cardio
+     Mood: Moderate Cardio, Activity: Working out, Tracks: 20
+  3. Workout: High Cardio
+     Mood: High Cardio, Activity: Working out, Tracks: 20
+  4. Workout: Extreme Cardio
+     Mood: Extreme Cardio, Activity: Working out, Tracks: 20
+  5. Workout: Recovery Cardio
+     Mood: Recovery Cardio, Activity: Working out, Tracks: 20
+
+Seasonal:
+  1. Season: Spring
+     Mood: Fresh, Activity: Gardening, Tracks: 20
+  2. Season: Summer
+     Mood: Hot, Activity: Beach, Tracks: 20
+  3. Season: Autumn
+     Mood: Cozy, Activity: Hiking, Tracks: 20
+  4. Season: Winter
+     Mood: Cold, Activity: Skiing, Tracks: 20
+  5. Season: Monsoon
+     Mood: Refreshing, Activity: Swimming, Tracks: 20
+
+Emotional State:
+  1. Emotion: In Love + Working
+     Mood: In Love, Activity: Working, Tracks: 10
+  2. Emotion: In Love + Working
+     Mood: In Love, Activity: Working, Tracks: 15
+  3. Emotion: In Love + Working
+     Mood: In Love, Activity: Working, Tracks: 20
+  4. Emotion: In Love + Relaxing
+     Mood: In Love, Activity: Relaxing, Tracks: 10
+  5. Emotion: In Love + Relaxing
+     Mood: In Love, Activity: Relaxing, Tracks: 15
+
+Special Occasion:
+  1. Occasion: Birthday Party
+     Mood: Celebratory, Activity: Partying, Tracks: 20
+  2. Occasion: Wedding
+     Mood: Romantic, Activity: Celebrating, Tracks: 20
+  3. Occasion: Graduation
+     Mood: Proud, Activity: Celebrating, Tracks: 20
+  4. Occasion: Anniversary
+     Mood: Romantic, Activity: Dating, Tracks: 20
+  5. Occasion: Holiday
+     Mood: Joyful, Activity: Relaxing, Tracks: 20
+
+Weather:
+  1. Weather: Sunny
+     Mood: Bright, Activity: Outdoor Activities, Tracks: 15
+  2. Weather: Rainy
+     Mood: Cozy, Activity: Indoor Activities, Tracks: 15
+  3. Weather: Cloudy
+     Mood: Mellow, Activity: Relaxing, Tracks: 15
+  4. Weather: Stormy
+     Mood: Intense, Activity: Indoor Activities, Tracks: 15
+  5. Weather: Snowy
+     Mood: Peaceful, Activity: Winter Activities, Tracks: 15
+
+Lifestyle:
+  1. Lifestyle: Student
+     Mood: Focused, Activity: Studying, Tracks: 20
+  2. Lifestyle: Working Professional
+     Mood: Productive, Activity: Working, Tracks: 20
+  3. Lifestyle: Artist
+     Mood: Creative, Activity: Creating, Tracks: 20
+  4. Lifestyle: Athlete
+     Mood: Energetic, Activity: Training, Tracks: 20
+  5. Lifestyle: Parent
+     Mood: Busy, Activity: Parenting, Tracks: 20
+
+Random Stress:
+  1. Random: Chaotic + Random Activity + 61
+     Mood: Chaotic, Activity: Random Activity, Tracks: 61
+  2. Random: Strange + Surprise Task + 41
+     Mood: Strange, Activity: Surprise Task, Tracks: 41
+  3. Random: Random + Weird Activity + 29
+     Mood: Random, Activity: Weird Activity, Tracks: 29
+  4. Random: Mixed + Random Activity + 67
+     Mood: Mixed, Activity: Random Activity, Tracks: 67
+  5. Random: Unexpected + Weird Activity + 73
+     Mood: Unexpected, Activity: Weird Activity, Tracks: 73

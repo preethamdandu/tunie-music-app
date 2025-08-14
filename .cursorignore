@@ -1,0 +1,16 @@
+# Allow .env files for AI features (explicitly enable)
+!.env
+!.env.*
+
+# Ignore other sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr

@@ -1,0 +1,231 @@
+PLAYLIST GENERATION TEST RESULTS
+========================================
+
+Total Tests: 44
+Passed: 43
+Failed: 1
+Success Rate: 97.73%
+Total Time: 4.55s
+
+TEST SCENARIOS:
+------------------------------
+1. Happy working music
+   Mood: Happy
+   Activity: Working
+   Tracks: 10
+------------------------------
+2. Sad relaxing music
+   Mood: Sad
+   Activity: Relaxing
+   Tracks: 15
+------------------------------
+3. Energetic workout music
+   Mood: Energetic
+   Activity: Working out
+   Tracks: 20
+------------------------------
+4. Calm studying music
+   Mood: Calm
+   Activity: Studying
+   Tracks: 15
+------------------------------
+5. Focus working music
+   Mood: Focus
+   Activity: Working
+   Tracks: 25
+------------------------------
+6. Single track playlist
+   Mood: Happy
+   Activity: Working
+   Tracks: 1
+------------------------------
+7. Large playlist
+   Mood: Energetic
+   Activity: Working out
+   Tracks: 50
+------------------------------
+8. Very large playlist
+   Mood: Calm
+   Activity: Sleeping
+   Tracks: 100
+------------------------------
+9. Nostalgic driving music
+   Mood: Nostalgic
+   Activity: Driving
+   Tracks: 20
+------------------------------
+10. Romantic dating music
+   Mood: Romantic
+   Activity: Dating
+   Tracks: 15
+------------------------------
+11. Mysterious reading music
+   Mood: Mysterious
+   Activity: Reading
+   Tracks: 20
+------------------------------
+12. Adventurous hiking music
+   Mood: Adventurous
+   Activity: Hiking
+   Tracks: 25
+------------------------------
+13. Happy cooking music
+   Mood: Happy
+   Activity: Cooking
+   Tracks: 15
+------------------------------
+14. Energetic dancing music
+   Mood: Energetic
+   Activity: Dancing
+   Tracks: 20
+------------------------------
+15. Calm meditation music
+   Mood: Calm
+   Activity: Meditation
+   Tracks: 10
+------------------------------
+16. Focus coding music
+   Mood: Focus
+   Activity: Coding
+   Tracks: 30
+------------------------------
+17. Fresh gardening music
+   Mood: Fresh
+   Activity: Gardening
+   Tracks: 20
+------------------------------
+18. Cozy reading music
+   Mood: Cozy
+   Activity: Reading by fire
+   Tracks: 15
+------------------------------
+19. Hot beach music
+   Mood: Hot
+   Activity: Beach
+   Tracks: 25
+------------------------------
+20. Cold skiing music
+   Mood: Cold
+   Activity: Skiing
+   Tracks: 20
+------------------------------
+21. Fresh morning music
+   Mood: Fresh
+   Activity: Morning workout
+   Tracks: 20
+------------------------------
+22. Productive afternoon music
+   Mood: Productive
+   Activity: Afternoon work
+   Tracks: 25
+------------------------------
+23. Relaxed evening music
+   Mood: Relaxed
+   Activity: Evening dinner
+   Tracks: 15
+------------------------------
+24. Peaceful night music
+   Mood: Peaceful
+   Activity: Night sleep
+   Tracks: 10
+------------------------------
+25. Confident interview music
+   Mood: Confident
+   Activity: Job interview
+   Tracks: 15
+------------------------------
+26. Inspired writing music
+   Mood: Inspired
+   Activity: Creative writing
+   Tracks: 20
+------------------------------
+27. Grateful family music
+   Mood: Grateful
+   Activity: Family dinner
+   Tracks: 15
+------------------------------
+28. Hopeful beginning music
+   Mood: Hopeful
+   Activity: New beginning
+   Tracks: 20
+------------------------------
+29. Celebratory birthday music
+   Mood: Celebratory
+   Activity: Birthday party
+   Tracks: 25
+------------------------------
+30. Romantic wedding music
+   Mood: Romantic
+   Activity: Wedding
+   Tracks: 30
+------------------------------
+31. Proud graduation music
+   Mood: Proud
+   Activity: Graduation
+   Tracks: 20
+------------------------------
+32. Joyful Christmas music
+   Mood: Joyful
+   Activity: Christmas
+   Tracks: 25
+------------------------------
+33. Bright sunny music
+   Mood: Bright
+   Activity: Sunny day
+   Tracks: 20
+------------------------------
+34. Cozy rainy music
+   Mood: Cozy
+   Activity: Rainy day
+   Tracks: 15
+------------------------------
+35. Intense stormy music
+   Mood: Intense
+   Activity: Stormy night
+   Tracks: 20
+------------------------------
+36. Peaceful snowy music
+   Mood: Peaceful
+   Activity: Snowy morning
+   Tracks: 15
+------------------------------
+37. Focused student music
+   Mood: Focused
+   Activity: Student studying
+   Tracks: 20
+------------------------------
+38. Productive professional music
+   Mood: Productive
+   Activity: Professional working
+   Tracks: 25
+------------------------------
+39. Creative artist music
+   Mood: Creative
+   Activity: Artist creating
+   Tracks: 20
+------------------------------
+40. Energetic athlete music
+   Mood: Energetic
+   Activity: Athlete training
+   Tracks: 30
+------------------------------
+41. Random mood test
+   Mood: Random
+   Activity: Random activity
+   Tracks: 17
+------------------------------
+42. Chaotic mood test
+   Mood: Chaotic
+   Activity: Unknown task
+   Tracks: 13
+------------------------------
+43. Unexpected mood test
+   Mood: Unexpected
+   Activity: Mystery activity
+   Tracks: 23
+------------------------------
+44. Surprising mood test
+   Mood: Surprising
+   Activity: Surprise task
+   Tracks: 29
+------------------------------

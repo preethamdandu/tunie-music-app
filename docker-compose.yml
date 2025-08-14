@@ -1,0 +1,88 @@
+# TuneGenie - AI-Powered Music Recommender
+# Docker Compose configuration for development and production
+
+version: '3.8'
+
+services:
+  tunegenie:
+    build: .
+    container_name: tunegenie-app
+    ports:
+      - "8501:8501"
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - COLLABORATIVE_FILTERING_ALGORITHM=${COLLABORATIVE_FILTERING_ALGORITHM:-SVD}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.7}
+      - DEBUG=${DEBUG:-False}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./prompts:/app/prompts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tunegenie-network
+
+  # Optional: Redis for caching (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: tunegenie-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - tunegenie-network
+
+  # Optional: PostgreSQL for persistent data (uncomment if needed)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: tunegenie-postgres
+  #   environment:
+  #     - POSTGRES_DB=tunegenie
+  #     - POSTGRES_USER=tunegenie
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tunegenie123}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - tunegenie-network
+
+  # Optional: Nginx reverse proxy (uncomment for production)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: tunegenie-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - tunegenie
+  #   restart: unless-stopped
+  #   networks:
+  #     - tunegenie-network
+
+networks:
+  tunegenie-network:
+    driver: bridge
+
+volumes:
+  # Uncomment if using Redis
+  # redis_data:
+  
+  # Uncomment if using PostgreSQL
+  # postgres_data:
