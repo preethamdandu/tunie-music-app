@@ -57,7 +57,7 @@ st.markdown("""
     
     /* Main Header with Gradient */
     .main-header {
-        font-size: 4rem;
+        font-size: 64px;
         font-weight: 800;
         text-align: center;
         background: linear-gradient(135deg, #1DB954, #1ed760, #00ff88, #00d4ff);
@@ -66,7 +66,7 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         background-clip: text;
         animation: gradientShift 3s ease-in-out infinite;
-        margin-bottom: 3rem;
+        margin-bottom: 48px;
         text-shadow: 0 0 30px rgba(29, 185, 84, 0.3);
     }
     
@@ -77,13 +77,13 @@ st.markdown("""
     
     /* Sub Header with Glow */
     .sub-header {
-        font-size: 2rem;
+        font-size: 32px;
         font-weight: 600;
         background: linear-gradient(45deg, #1DB954, #1ed760);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-bottom: 2rem;
+        margin-bottom: 32px;
         text-shadow: 0 0 20px rgba(29, 185, 84, 0.2);
     }
     
@@ -91,14 +91,14 @@ st.markdown("""
     .metric-card {
         background: linear-gradient(135deg, #2d3748, #4a5568);
         color: #ffffff;
-        padding: 2rem;
+        padding: 32px;
         border-radius: 20px;
         border: 1px solid rgba(29, 185, 84, 0.2);
         box-shadow: 
             0 20px 40px rgba(0, 0, 0, 0.3),
             0 0 0 1px rgba(29, 185, 84, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        margin-bottom: 1.5rem;
+        margin-bottom: 24px;
         position: relative;
         overflow: hidden;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -131,8 +131,8 @@ st.markdown("""
     
     .metric-card h3 {
         color: #1DB954;
-        margin-bottom: 1.5rem;
-        font-size: 1.4rem;
+        margin-bottom: 24px;
+        font-size: 22px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -152,8 +152,8 @@ st.markdown("""
     
     .metric-card p {
         color: #e2e8f0;
-        margin-bottom: 0.8rem;
-        font-size: 1rem;
+        margin-bottom: 13px;
+        font-size: 16px;
         font-weight: 400;
         transition: color 0.3s ease;
     }
@@ -172,7 +172,7 @@ st.markdown("""
     .success-message {
         background: linear-gradient(135deg, #d4edda, #c3e6cb);
         color: #155724;
-        padding: 1.5rem;
+        padding: 24px;
         border-radius: 15px;
         border: 1px solid #c3e6cb;
         box-shadow: 0 10px 30px rgba(21, 87, 36, 0.2);
@@ -182,7 +182,7 @@ st.markdown("""
     .error-message {
         background: linear-gradient(135deg, #f8d7da, #f5c6cb);
         color: #721c24;
-        padding: 1.5rem;
+        padding: 24px;
         border-radius: 15px;
         border: 1px solid #f5c6cb;
         box-shadow: 0 10px 30px rgba(114, 28, 36, 0.2);
@@ -205,13 +205,13 @@ st.markdown("""
         background: linear-gradient(135deg, #1DB954, #1ed760);
         color: white;
         border: none;
-        padding: 1rem 2rem;
+        padding: 16px 32px;
         border-radius: 15px;
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 18px;
         cursor: pointer;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        margin: 0.8rem;
+        margin: 13px;
         position: relative;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(29, 185, 84, 0.3);
@@ -251,8 +251,8 @@ st.markdown("""
         border: none !important;
         border-radius: 15px !important;
         font-weight: 600 !important;
-        font-size: 1.1rem !important;
-        padding: 1rem 2rem !important;
+        font-size: 18px !important;
+        padding: 16px 32px !important;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
         box-shadow: 0 10px 30px rgba(29, 185, 84, 0.3) !important;
         text-transform: uppercase !important;
@@ -299,7 +299,7 @@ st.markdown("""
     .stRadio > div {
         background: linear-gradient(135deg, rgba(45, 55, 72, 0.8), rgba(74, 85, 104, 0.8)) !important;
         border-radius: 15px !important;
-        padding: 1rem !important;
+        padding: 16px !important;
         border: 1px solid rgba(29, 185, 84, 0.2) !important;
     }
     
@@ -333,12 +333,12 @@ st.markdown("""
         border-radius: 12px !important;
         color: white !important;
         transition: all 0.3s ease !important;
-        padding: 0.8rem 1rem !important;
-        min-height: 3rem !important;
+        padding: 13px 16px !important;
+        min-height: 48px !important;
         display: flex !important;
         align-items: center !important;
         line-height: 1.4 !important;
-        font-size: 0.95rem !important;
+        font-size: 15px !important;
     }
     
     .stSelectbox > div > div > div:hover {
@@ -355,25 +355,25 @@ st.markdown("""
     
     /* Fix dropdown text visibility - ensure text is fully shown */
     .stSelectbox > div > div > div > div {
-        padding: 0.5rem 0 !important;
+        padding: 8px 0 !important;
         line-height: 1.4 !important;
-        min-height: 2.5rem !important;
+        min-height: 40px !important;
         display: flex !important;
         align-items: center !important;
     }
     
     /* Ensure dropdown options are fully visible */
     .stSelectbox > div > div > div > div > div {
-        padding: 0.6rem 0 !important;
+        padding: 10px 0 !important;
         line-height: 1.4 !important;
-        min-height: 2.8rem !important;
+        min-height: 45px !important;
     }
     
     /* Enhanced dropdown options styling for better visibility */
     .stSelectbox > div > div > div > div > div > div {
-        padding: 0.6rem 0 !important;
+        padding: 10px 0 !important;
         line-height: 1.4 !important;
-        min-height: 2.8rem !important;
+        min-height: 45px !important;
     }
     
     /* Enhanced Form Spacing */
@@ -383,23 +383,23 @@ st.markdown("""
     
     /* Better Column Spacing */
     .row-widget.stHorizontal > div {
-        gap: 3rem !important;
-        padding: 0 1rem !important;
+        gap: 48px !important;
+        padding: 0 16px !important;
     }
     
     /* Enhanced form element spacing */
     .stForm > div > div {
-        margin-bottom: 2rem !important;
+        margin-bottom: 32px !important;
     }
     
     /* Better input field spacing - compact for single viewport */
     .stSelectbox, .stTextArea, .stRadio, .stSlider, .stNumberInput {
-        margin-bottom: 1.5rem !important;
+        margin-bottom: 24px !important;
     }
     
     /* Compact form layout */
     .stForm > div > div {
-        margin-bottom: 1rem !important;
+        margin-bottom: 16px !important;
     }
     
     /* Enhanced Text Area */
@@ -408,8 +408,8 @@ st.markdown("""
         border: 2px solid rgba(29, 185, 84, 0.4) !important;
         border-radius: 15px !important;
         color: white !important;
-        padding: 1.2rem !important;
-        font-size: 1rem !important;
+        padding: 19px !important;
+        font-size: 16px !important;
         line-height: 1.6 !important;
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
@@ -428,7 +428,7 @@ st.markdown("""
     
     /* Enhanced Dropdown Styling for all selectboxes */
     .stSelectbox {
-        margin-bottom: 1rem !important;
+        margin-bottom: 16px !important;
         overflow: visible !important;
     }
     
@@ -456,9 +456,9 @@ st.markdown("""
     
     /* Ensure all dropdown text is fully visible */
     .stSelectbox > div > div > div {
-        min-height: 3.8rem !important;
-        padding: 1.3rem 1.8rem !important;
-        font-size: 1.05rem !important;
+        min-height: 61px !important;
+        padding: 21px 29px !important;
+        font-size: 17px !important;
         line-height: 1.5 !important;
         display: flex !important;
         align-items: center !important;
@@ -478,38 +478,38 @@ st.markdown("""
     /* Fix dropdown arrow positioning */
     .stSelectbox > div > div > div > div:last-child {
         margin-left: auto !important;
-        padding-left: 0.5rem !important;
+        padding-left: 8px !important;
     }
     
     /* Ensure dropdown text has enough space */
     .stSelectbox > div > div > div > div:first-child {
         flex: 1 !important;
-        padding-right: 0.5rem !important;
-        min-height: 3.5rem !important;
+        padding-right: 8px !important;
+        min-height: 56px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
         overflow: visible !important;
         word-wrap: break-word !important;
         white-space: normal !important;
-        padding-top: 0.3rem !important;
-        padding-bottom: 0.3rem !important;
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
     }
     
     /* Ensure dropdown text content is fully visible */
     .stSelectbox > div > div > div > div:first-child > div {
         width: 100% !important;
         text-align: left !important;
-        padding: 0.2rem 0 !important;
+        padding: 3px 0 !important;
         line-height: 1.4 !important;
         overflow: visible !important;
     }
     
     /* Force override Streamlit's internal text clipping */
     .stSelectbox > div > div > div > div:first-child > div > div {
-        padding: 0.3rem 0 !important;
+        padding: 5px 0 !important;
         line-height: 1.6 !important;
-        min-height: 2.8rem !important;
+        min-height: 45px !important;
         display: flex !important;
         align-items: center !important;
         overflow: visible !important;
@@ -545,7 +545,7 @@ st.markdown("""
     .css-1d391kg .css-1v0mbdj {
         background: linear-gradient(135deg, #1DB954, #1ed760) !important;
         border-radius: 10px !important;
-        margin: 0.5rem 0 !important;
+        margin: 8px 0 !important;
         transition: all 0.3s ease !important;
     }
     
@@ -556,14 +556,14 @@ st.markdown("""
     
     /* Page Container Improvements */
     .main .block-container {
-        padding-top: 3rem !important;
-        padding-bottom: 3rem !important;
+        padding-top: 48px !important;
+        padding-bottom: 48px !important;
         max-width: 1400px !important;
     }
     
     /* Dashboard Section Spacing */
     .dashboard-section {
-        margin-bottom: 3rem !important;
+        margin-bottom: 48px !important;
         animation: fadeInUp 0.8s ease-out !important;
     }
     
@@ -581,14 +581,14 @@ st.markdown("""
     /* Responsive Design */
     @media (max-width: 768px) {
         .main-header {
-            font-size: 2.5rem;
+            font-size: 40px;
         }
         .sub-header {
-            font-size: 1.5rem;
+            font-size: 24px;
         }
         .metric-card {
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            padding: 24px;
+            margin-bottom: 16px;
         }
     }
     
@@ -723,8 +723,8 @@ st.markdown("""
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 15px !important;
-        padding: 1.2rem 1.5rem !important;
-        font-size: 1rem !important;
+        padding: 19px 24px !important;
+        font-size: 16px !important;
         color: white !important;
         transition: all 0.3s ease !important;
     }
@@ -740,8 +740,8 @@ st.markdown("""
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 15px !important;
-        padding: 1.2rem !important;
-        font-size: 1rem !important;
+        padding: 19px !important;
+        font-size: 16px !important;
         color: white !important;
         transition: all 0.3s ease !important;
     }
@@ -756,7 +756,7 @@ st.markdown("""
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 12px !important;
-        padding: 0.8rem 1.2rem !important;
+        padding: 13px 19px !important;
         color: white !important;
         transition: all 0.3s ease !important;
     }
@@ -775,8 +775,8 @@ st.markdown("""
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05)) !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 15px !important;
-        padding: 1rem 1.2rem !important;
-        font-size: 1rem !important;
+        padding: 16px 19px !important;
+        font-size: 16px !important;
         color: white !important;
         transition: all 0.3s ease !important;
     }
@@ -792,8 +792,8 @@ st.markdown("""
         background: linear-gradient(135deg, #1DB954, #46CD73, #2ECC71) !important;
         border: none !important;
         border-radius: 25px !important;
-        padding: 1rem 2rem !important;
-        font-size: 1.2rem !important;
+        padding: 16px 32px !important;
+        font-size: 19px !important;
         font-weight: 700 !important;
         color: white !important;
         text-transform: uppercase !important;
@@ -939,7 +939,7 @@ def main():
     
     # Main header with gradient
     st.markdown('<h1 class="main-header">🎵 TuneGenie</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #e2e8f0; font-size: 1.2rem; margin-bottom: 2rem;">AI-Powered Music Recommendation System</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #e2e8f0; font-size: 19px; margin-bottom: 32px;">AI-Powered Music Recommendation System</p>', unsafe_allow_html=True)
     
     # Sidebar navigation
     with st.sidebar:
@@ -1098,30 +1098,389 @@ def show_playlist_generation():
         return
     
     try:
-        # Simple, clean interface
+        # Fresh global CSS for Generate Playlist
         st.markdown("""
-        <div style="
+        <style>
+        /* ===== FRESH GENERATE PLAYLIST DESIGN SYSTEM ===== */
+        .main-container {
             background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 32px auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            max-width: 1200px;
+        }
+        .main-title {
+            color: #1DB954;
+            text-align: center;
+            margin-bottom: 48px;
+            font-size: 42px;
+            font-weight: 800;
+            text-shadow: 0 4px 8px rgba(29,185,84,0.3);
+        }
+        .subtitle {
+            color: #e2e8f0;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 22px;
+            opacity: 0.9;
+        }
+        .form-container {
+            background: rgba(255,255,255,0.05);
             border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        ">
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .section-header {
+            color: #1DB954;
+            margin-bottom: 16px;
+            font-size: 22px;
+            font-weight: 700;
+            text-align: left;
+        }
+        .spacing-div {
+            margin: 24px 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(29,185,84,0.3), transparent);
+        }
+        /* Core widgets */
+        .stSelectbox > div > div > div,
+        .stNumberInput > div > input,
+        .stTextArea > div > div > textarea {
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.35) !important;
+            border-radius: 16px !important;
+            color: #ffffff !important;
+            padding: 20px 24px !important;
+            font-size: 16px !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+        }
+        .stSelectbox > div > div > div { height: 72px !important; display: flex !important; align-items: center !important; border-radius: 16px !important; }
+        .stSelectbox [data-baseweb="select"] > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+        .stSelectbox [role="combobox"] { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+        .stTextArea > div > div > textarea { height: 120px !important; line-height: 1.6 !important; resize: none !important; }
+        .stRadio > div { background: rgba(255,255,255,0.05) !important; border-radius: 16px !important; padding: 20px !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        
+        /* Remove global select hover/jump styling */
+        .stSelectbox > div > div > div:hover { transform: none !important; box-shadow: none !important; }
+        .stSelectbox > div > div:hover { transform: none !important; box-shadow: none !important; }
+        .stSelectbox > div > div > div { gap: initial !important; position: static !important; overflow: visible !important; }
+        .stSelectbox > div > div > div > div { background: initial !important; border: initial !important; margin: initial !important; padding: initial !important; box-shadow: none !important; border-radius: initial !important; }
+        .stSelectbox > div > div > div > div:last-child { background: initial !important; border-left: initial !important; margin-left: initial !important; padding-left: initial !important; }
+        
+        /* Mood select: style ONLY the outer wrapper div.stSelectbox (single capsule) */
+        .stSelectbox[key="mood_select"] {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease !important;
+            overflow: hidden !important;
+        }
+        .stSelectbox[key="mood_select"]:hover,
+        .stSelectbox[key="mood_select"]:focus-within,
+        .stSelectbox[key="mood_select"] [data-baseweb="select"]:hover,
+        .stSelectbox[key="mood_select"] [data-baseweb="select"]:focus-within,
+        div.stSelectbox:has(input[aria-label*="mood" i]):hover,
+        div.stSelectbox:has(input[aria-label*="mood" i]):focus-within,
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"]:hover,
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"]:focus-within {
+            border-color: #1DB954 !important;
+            box-shadow: 0 0 0 3px rgba(29,185,84,0.30), 0 12px 28px rgba(0,0,0,0.35) !important;
+            background: linear-gradient(135deg, #34455d, #566578) !important;
+            transform: translateY(-4px) scale(1.01) !important;
+        }
+        /* Neutralize inner segments so they don't render their own boxes */
+        .stSelectbox[key="mood_select"] > div,
+        .stSelectbox[key="mood_select"] > div > div,
+        .stSelectbox[key="mood_select"] [data-baseweb="select"],
+        .stSelectbox[key="mood_select"] [data-baseweb="select"] > div,
+        .stSelectbox[key="mood_select"] [role="combobox"] {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .stSelectbox[key="mood_select"] [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; }
+        .stSelectbox[key="mood_select"] [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+        /* Explicitly target the mood select wrapper via :has() to ensure override */
+        div.stSelectbox:has(input[aria-label*="mood" i]) {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            overflow: hidden !important;
+        }
+        div.stSelectbox:has(input[aria-label*="mood" i]) * { box-shadow: none !important; }
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"],
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"] > div,
+        div.stSelectbox:has(input[aria-label*="mood" i]) [role="combobox"],
+        div.stSelectbox:has(input[aria-label*="mood" i]) > div,
+        div.stSelectbox:has(input[aria-label*="mood" i]) > div > div,
+        div.stSelectbox:has(input[aria-label*="mood" i]) > div > div > div {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"] { width: 100% !important; display: flex !important; align-items: center !important; }
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; padding-left: 16px !important; }
+        div.stSelectbox:has(input[aria-label*="mood" i]) [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+        /* ================= ACTIVITY SELECT: same single-capsule treatment ================= */
+        .stSelectbox[key="activity_select"] {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.2s ease !important;
+            will-change: transform, box-shadow;
+            overflow: hidden !important;
+        }
+        .stSelectbox[key="activity_select"]:hover,
+        .stSelectbox[key="activity_select"]:focus-within,
+        .stSelectbox[key="activity_select"] [data-baseweb="select"]:hover,
+        .stSelectbox[key="activity_select"] [data-baseweb="select"]:focus-within,
+        div.stSelectbox:has(input[aria-label*="activity" i]):hover,
+        div.stSelectbox:has(input[aria-label*="activity" i]):focus-within,
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"]:hover,
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"]:focus-within { 
+            border-color: #1DB954 !important; 
+            box-shadow: 0 0 0 3px rgba(29,185,84,0.30), 0 12px 28px rgba(0,0,0,0.35) !important; 
+            background: linear-gradient(135deg, #34455d, #566578) !important; 
+            transform: translateY(-4px) scale(1.01) !important;
+        }
+        .stSelectbox[key="activity_select"] > div,
+        .stSelectbox[key="activity_select"] > div > div,
+        .stSelectbox[key="activity_select"] [data-baseweb="select"],
+        .stSelectbox[key="activity_select"] [data-baseweb="select"] > div,
+        .stSelectbox[key="activity_select"] [role="combobox"] {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .stSelectbox[key="activity_select"] [data-baseweb="select"] { width: 100% !important; display: flex !important; align-items: center !important; }
+        .stSelectbox[key="activity_select"] [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; padding-left: 16px !important; }
+        .stSelectbox[key="activity_select"] [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+        /* Robust aria-label based targeting as fallback */
+        div.stSelectbox:has(input[aria-label*="activity" i]) {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.2s ease !important;
+            will-change: transform, box-shadow;
+            overflow: hidden !important;
+        }
+        div.stSelectbox:has(input[aria-label*="activity" i]) * { box-shadow: none !important; }
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"],
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"] > div,
+        div.stSelectbox:has(input[aria-label*="activity" i]) [role="combobox"],
+        div.stSelectbox:has(input[aria-label*="activity" i]) > div,
+        div.stSelectbox:has(input[aria-label*="activity" i]) > div > div,
+        div.stSelectbox:has(input[aria-label*="activity" i]) > div > div > div {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"] { width: 100% !important; display: flex !important; align-items: center !important; }
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; padding-left: 16px !important; }
+        div.stSelectbox:has(input[aria-label*="activity" i]) [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+        /* ================= LANGUAGE SELECT: same single-capsule treatment ================= */
+        .stSelectbox[key="language_select"] {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.2s ease !important;
+            will-change: transform, box-shadow;
+            overflow: hidden !important;
+        }
+        .stSelectbox[key="language_select"]:hover,
+        .stSelectbox[key="language_select"]:focus-within,
+        .stSelectbox[key="language_select"] [data-baseweb="select"]:hover,
+        .stSelectbox[key="language_select"] [data-baseweb="select"]:focus-within,
+        div.stSelectbox:has(input[aria-label*="language" i]):hover,
+        div.stSelectbox:has(input[aria-label*="language" i]):focus-within,
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"]:hover,
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"]:focus-within { 
+            border-color: #1DB954 !important; 
+            box-shadow: 0 0 0 3px rgba(29,185,84,0.30), 0 12px 28px rgba(0,0,0,0.35) !important; 
+            background: linear-gradient(135deg, #34455d, #566578) !important; 
+            transform: translateY(-4px) scale(1.01) !important;
+        }
+        .stSelectbox[key="language_select"] > div,
+        .stSelectbox[key="language_select"] > div > div,
+        .stSelectbox[key="language_select"] [data-baseweb="select"],
+        .stSelectbox[key="language_select"] [data-baseweb="select"] > div,
+        .stSelectbox[key="language_select"] [role="combobox"] {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .stSelectbox[key="language_select"] [data-baseweb="select"] { width: 100% !important; display: flex !important; align-items: center !important; }
+        .stSelectbox[key="language_select"] [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; padding-left: 16px !important; }
+        .stSelectbox[key="language_select"] [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+        /* Fallback via aria-label */
+        div.stSelectbox:has(input[aria-label*="language" i]) {
+            height: 74px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 12px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.2s ease !important;
+            will-change: transform, box-shadow;
+            overflow: hidden !important;
+        }
+        div.stSelectbox:has(input[aria-label*="language" i]):hover,
+        div.stSelectbox:has(input[aria-label*="language" i]):focus-within {
+            border-color: #1DB954 !important;
+            box-shadow: 0 0 0 3px rgba(29,185,84,0.30), 0 12px 28px rgba(0,0,0,0.35) !important;
+            background: linear-gradient(135deg, #34455d, #566578) !important; 
+            transform: translateY(-4px) scale(1.01) !important;
+        }
+        div.stSelectbox:has(input[aria-label*="language" i]) * { box-shadow: none !important; }
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"],
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"] > div,
+        div.stSelectbox:has(input[aria-label*="language" i]) [role="combobox"],
+        div.stSelectbox:has(input[aria-label*="language" i]) > div,
+        div.stSelectbox:has(input[aria-label*="language" i]) > div > div,
+        div.stSelectbox:has(input[aria-label*="language" i]) > div > div > div {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"] { width: 100% !important; display: flex !important; align-items: center !important; }
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"] > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; display: flex !important; align-items: center !important; padding-left: 16px !important; }
+        div.stSelectbox:has(input[aria-label*="language" i]) [data-baseweb="select"] > div:last-child { width: 42px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+
+        /* ================= CONTEXT TEXTAREA: single-capsule treatment ================= */
+        .stTextArea[key="context_input"] > div {
+            background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+            border: 2px solid rgba(29,185,84,0.45) !important;
+            border-radius: 16px !important;
+            min-height: 160px !important;
+            padding: 16px !important;
+            box-sizing: border-box !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.2s ease !important;
+            will-change: transform, box-shadow;
+            overflow: hidden !important;
+        }
+        .stTextArea[key="context_input"] > div:hover,
+        .stTextArea[key="context_input"] > div:focus-within {
+            border-color: #1DB954 !important;
+            box-shadow: 0 0 0 3px rgba(29,185,84,0.30), 0 12px 28px rgba(0,0,0,0.35) !important;
+            background: linear-gradient(135deg, #34455d, #566578) !important;
+            transform: translateY(-3px) scale(1.01) !important;
+        }
+        /* Neutralize inner wrappers and textarea so no double boxes */
+        .stTextArea[key="context_input"] > div > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+        .stTextArea[key="context_input"] textarea {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: #ffffff !important;
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            width: 100% !important;
+            height: 100% !important;
+            resize: vertical !important;
+            padding: 0 !important;
+        }
+        .stButton > button {
+            background: linear-gradient(135deg, #1DB954, #46CD73) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 20px !important;
+            padding: 20px 40px !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            width: 100% !important;
+            height: 72px !important;
+            box-shadow: 0 8px 24px rgba(29,185,84,0.3) !important;
+            cursor: pointer !important;
+        }
+        .summary-section { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 32px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.1); }
+        .summary-header { color: #1DB954; text-align: center; margin-bottom: 24px; font-size: 24px; font-weight: 700; }
+        .metric-card { background: linear-gradient(135deg, #2d3748, #4a5568); border-radius: 16px; padding: 24px; text-align: center; border: 1px solid rgba(29,185,84,0.2); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .metric-value { color: #1DB954; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+        .metric-label { color: #e2e8f0; font-size: 14px; opacity: 0.85; }
+        @media (max-width: 768px) {
+            .main-container { padding: 24px; margin: 16px; }
+            .main-title { font-size: 32px; }
+            .form-container { padding: 24px; }
+        }
+        </style>
         """, unsafe_allow_html=True)
         
-        # Title
-        st.markdown('<h1 style="color: #1DB954; text-align: center; margin-bottom: 2rem;">🎵 TuneGenie Studio</h1>', unsafe_allow_html=True)
-        st.markdown('<p style="color: #e2e8f0; text-align: center; margin-bottom: 2rem; font-size: 1.2rem;">Create Your Perfect Playlist</p>', unsafe_allow_html=True)
+        # ===== FRESH, PERFECT PLAYLIST GENERATION FORM =====
+        st.markdown('<div class="main-container">', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-title">🎵 Generate Your Perfect Playlist</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="subtitle">Let TuneGenie create the perfect soundtrack for your mood, activity, and preferences</p>', unsafe_allow_html=True)
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
         
-        # Playlist generation form
+        # Main Form Container
         with st.form("playlist_generation_form"):
-            # Three columns for inputs
-            col1, col2, col3 = st.columns(3)
+            # Perfect Three-Column Layout
+            col1, col2, col3 = st.columns([2.2, 2.2, 1.6])
             
+            # ===== COLUMN 1: MOOD & CONTEXT =====
             with col1:
-                st.markdown('<h3 style="color: #1DB954; margin-bottom: 1rem;">😊 Mood & Context</h3>', unsafe_allow_html=True)
+                st.markdown('<h3 class="section-header">😊 Mood & Context</h3>', unsafe_allow_html=True)
                 
-                # Mood selection
+                # Perfect Mood Selection
                 mood = st.selectbox(
                     "Select your mood",
                     ["Happy", "Sad", "Energetic", "Calm", "Focused", "Relaxed", "Motivated", "Melancholic", "Excited", "Peaceful"],
@@ -1129,19 +1488,23 @@ def show_playlist_generation():
                     label_visibility="collapsed"
                 )
                 
-                # Context input
+                # Perfect Spacing
+                st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                
+                # Perfect Context Input
                 user_context = st.text_area(
                     "Describe your situation",
                     placeholder="What are you doing? Any specific preferences?",
                     key="context_input",
                     label_visibility="collapsed",
-                    height=100
+                    height=120
                 )
             
+            # ===== COLUMN 2: ACTIVITY & LANGUAGE =====
             with col2:
-                st.markdown('<h3 style="color: #46CD73; margin-bottom: 1rem;">🏃‍♂️ Activity & Language</h3>', unsafe_allow_html=True)
+                st.markdown('<h3 class="section-header">🏃‍♂️ Activity & Language</h3>', unsafe_allow_html=True)
                 
-                # Activity selection
+                # Perfect Activity Selection
                 activity = st.selectbox(
                     "Select your activity",
                     ["Working", "Exercising", "Studying", "Commuting", "Cooking", "Cleaning", "Socializing", "Meditating", "Creative Work", "Relaxing"],
@@ -1149,23 +1512,30 @@ def show_playlist_generation():
                     label_visibility="collapsed"
                 )
                 
-                # Language selection
+                # Perfect Spacing
+                st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                
+                # Perfect Language Selection
                 language_preference = st.selectbox(
                     "Choose your preferred language",
                     ["Any Language", "English", "Tamil", "Telugu", "Hindi", "Kannada", "Malayalam", "Bengali", "Marathi", "Gujarati", "Punjabi", "Urdu", "Spanish", "French", "German", "Italian", "Portuguese", "Korean", "Japanese", "Chinese", "Arabic", "Russian"],
                     key="language_select"
                 )
                 
-                # Language-specific info messages
+                # Perfect Spacing
+                st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                
+                # Perfect Language Info
                 if language_preference == "English":
                     st.info("🇺🇸 English tracks will be prioritized")
                 elif language_preference != "Any Language":
                     st.info(f"🌍 {language_preference} language tracks will be prioritized")
             
+            # ===== COLUMN 3: TRACK COUNT =====
             with col3:
-                st.markdown('<h3 style="color: #2ECC71; margin-bottom: 1rem;">🎯 Track Count Selection</h3>', unsafe_allow_html=True)
+                st.markdown('<h3 class="section-header">🎯 Track Count</h3>', unsafe_allow_html=True)
                 
-                # Track count method selection
+                # Perfect Track Count Method
                 track_count_method = st.radio(
                     "Choose your method:",
                     ["Quick Select", "Custom Number"],
@@ -1174,54 +1544,109 @@ def show_playlist_generation():
                     label_visibility="collapsed"
                 )
                 
+                # Perfect Spacing
+                st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                
+                # Perfect Track Count Selection
                 if track_count_method == "Quick Select":
-                    n_recommendations = st.slider("Number of tracks", min_value=5, max_value=50, value=20, step=5, key="tracks_slider")
+                    n_recommendations = st.slider(
+                        "Number of tracks", 
+                        min_value=5, 
+                        max_value=50, 
+                        value=20, 
+                        step=5, 
+                        key="tracks_slider"
+                    )
                 else:
-                    st.markdown('<p style="color: #f39c12; font-size: 0.9rem; margin-bottom: 1rem;">💡 Enter any number from 1 to 250 tracks</p>', unsafe_allow_html=True)
-                    n_recommendations = st.number_input("Number of tracks", min_value=1, max_value=250, value=20, step=1, help="Enter any number from 1 to 250 tracks", key="tracks_custom_input")
+                    st.markdown('<p style="color: #f39c12; font-size: 16px; margin-bottom: 24px; text-align: center;">💡 Enter any number from 1 to 250 tracks</p>', unsafe_allow_html=True)
+                    n_recommendations = st.number_input(
+                        "Number of tracks", 
+                        min_value=1, 
+                        max_value=250, 
+                        value=20, 
+                        step=1, 
+                        help="Enter any number from 1 to 250 tracks", 
+                        key="tracks_custom_input"
+                    )
                     
-                    # Fun examples
+                    # Perfect Spacing
+                    st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                    
+                    # Perfect Track Examples
                     if n_recommendations == 1:
-                        st.markdown('<p style="color: #e74c3c; font-size: 0.9rem; font-style: italic;">🎵 Single track - Perfect for a quick mood boost!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #e74c3c; font-size: 16px; font-style: italic; text-align: center;">🎵 Single track - Perfect for a quick mood boost!</p>', unsafe_allow_html=True)
                     elif n_recommendations <= 5:
-                        st.markdown('<p style="color: #f39c12; font-size: 0.9rem; font-style: italic;">🎵 Mini playlist - Great for short activities!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #f39c12; font-size: 16px; font-style: italic; text-align: center;">🎵 Mini playlist - Great for short activities!</p>', unsafe_allow_html=True)
                     elif n_recommendations <= 15:
-                        st.markdown('<p style="color: #3498db; font-size: 0.9rem; font-style: italic;">🎵 Standard playlist - Perfect for most activities!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #3498db; font-size: 16px; font-style: italic; text-align: center;">🎵 Standard playlist - Perfect for most activities!</p>', unsafe_allow_html=True)
                     elif n_recommendations <= 50:
-                        st.markdown('<p style="color: #2ecc71; font-size: 0.9rem; font-style: italic;">🎵 Extended playlist - For longer sessions!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #2ecc71; font-size: 16px; font-style: italic; text-align: center;">🎵 Extended playlist - For longer sessions!</p>', unsafe_allow_html=True)
                     elif n_recommendations <= 100:
-                        st.markdown('<p style="color: #9b59b6; font-size: 0.9rem; font-style: italic;">🎵 Mega playlist - Epic listening sessions!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #9b59b6; font-size: 16px; font-style: italic; text-align: center;">🎵 Mega playlist - Epic listening sessions!</p>', unsafe_allow_html=True)
                     else:
-                        st.markdown('<p style="color: #e67e22; font-size: 0.9rem; font-style: italic;">🎵 Ultimate playlist - The ultimate music marathon!</p>', unsafe_allow_html=True)
+                        st.markdown('<p style="color: #e67e22; font-size: 16px; font-style: italic; text-align: center;">🎵 Ultimate playlist - The ultimate music marathon!</p>', unsafe_allow_html=True)
             
-            # Summary section
-            st.markdown("---")
-            st.markdown('<h3 style="color: #1DB954; text-align: center; margin: 2rem 0;">🎯 Your Selection Summary</h3>', unsafe_allow_html=True)
+            # ===== PERFECT SUMMARY SECTION =====
+            st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
             
-            # Summary cards
-            summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
+            with st.container():
+                st.markdown('<div class="summary-section">', unsafe_allow_html=True)
+                st.markdown('<h3 class="summary-header">🎯 Your Selection Summary</h3>', unsafe_allow_html=True)
+                
+                # Perfect Summary Grid
+                summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
+                
+                with summary_col1:
+                    st.markdown("""
+                    <div class="metric-card">
+                        <div class="metric-value">😊</div>
+                        <div class="metric-label">Mood</div>
+                        <div class="metric-value" style="font-size: 20px; color: #1DB954;">{}</div>
+                    </div>
+                    """.format(mood), unsafe_allow_html=True)
+                
+                with summary_col2:
+                    st.markdown("""
+                    <div class="metric-card">
+                        <div class="metric-value">🏃‍♂️</div>
+                        <div class="metric-label">Activity</div>
+                        <div class="metric-value" style="font-size: 20px; color: #46CD73;">{}</div>
+                    </div>
+                    """.format(activity), unsafe_allow_html=True)
+                
+                with summary_col3:
+                    st.markdown("""
+                    <div class="metric-card">
+                        <div class="metric-value">🌍</div>
+                        <div class="metric-label">Language</div>
+                        <div class="metric-value" style="font-size: 20px; color: #2ECC71;">{}</div>
+                    </div>
+                    """.format(language_preference), unsafe_allow_html=True)
+                
+                with summary_col4:
+                    st.markdown("""
+                    <div class="metric-card">
+                        <div class="metric-value">🎵</div>
+                        <div class="metric-label">Tracks</div>
+                        <div class="metric-value" style="font-size: 20px; color: #9B59B6;">{}</div>
+                    </div>
+                    """.format(n_recommendations), unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            with summary_col1:
-                st.metric("😊 Mood", mood)
-            
-            with summary_col2:
-                st.metric("🏃‍♂️ Activity", activity)
-            
-            with summary_col3:
-                st.metric("🌍 Language", language_preference)
-            
-            with summary_col4:
-                st.metric("🎵 Tracks", n_recommendations)
+            # ===== PERFECT GENERATE BUTTON =====
+            st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
             
             # Submit button
             submit_button = st.form_submit_button(
-                "🎵 Generate My Playlist",
+                "🚀 Generate My Perfect Playlist",
                 use_container_width=True,
                 type="primary"
             )
         
-        # Close the main container
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Close containers
+        st.markdown("</div>", unsafe_allow_html=True)  # form-container
+        st.markdown("</div>", unsafe_allow_html=True)  # main-container
         
         # Results and feedback section (outside the form)
         if submit_button:
@@ -1246,7 +1671,7 @@ def show_playlist_generation():
                         col1, col2 = st.columns([2, 1])
                         
                         with col1:
-                            st.markdown('<h3 style="color: #1DB954; margin-bottom: 1rem;">📋 Generated Playlist</h3>', unsafe_allow_html=True)
+                            st.markdown('<h3 style="color: #1DB954; margin-bottom: 16px;">📋 Generated Playlist</h3>', unsafe_allow_html=True)
                             
                             if 'spotify_playlist' in result and 'spotify_url' in result['spotify_playlist']:
                                 playlist_name = result['final_playlist'].get('playlist_name', 'TuneGenie Playlist')
@@ -1262,7 +1687,7 @@ def show_playlist_generation():
                                 
                                 # Display tracks
                                 if 'tracks' in result['final_playlist']:
-                                    st.markdown('<h4 style="color: #1DB954; margin: 1rem 0;">📝 Track List</h4>', unsafe_allow_html=True)
+                                    st.markdown('<h4 style="color: #1DB954; margin: 16px 0;">📝 Track List</h4>', unsafe_allow_html=True)
                                     
                                     tracks = result['final_playlist']['tracks']
                                     for i, track in enumerate(tracks[:10], 1):  # Show first 10 tracks
@@ -1274,7 +1699,7 @@ def show_playlist_generation():
                                 st.warning("⚠️ Playlist was generated but couldn't be saved to Spotify. Check your credentials.")
                         
                         with col2:
-                            st.markdown('<h3 style="color: #1DB954; margin-bottom: 1rem;">📊 Generation Stats</h3>', unsafe_allow_html=True)
+                            st.markdown('<h3 style="color: #1DB954; margin-bottom: 16px;">📊 Generation Stats</h3>', unsafe_allow_html=True)
                             
                             # Display workflow stats
                             if 'workflow_stats' in result:
@@ -1285,7 +1710,7 @@ def show_playlist_generation():
                         
                         # Feedback section
                         st.markdown("---")
-                        st.markdown('<h3 style="color: #1DB954; text-align: center; margin: 2rem 0;">💬 How was your playlist?</h3>', unsafe_allow_html=True)
+                        st.markdown('<h3 style="color: #1DB954; text-align: center; margin: 32px 0;">💬 How was your playlist?</h3>', unsafe_allow_html=True)
                         
                         feedback_col1, feedback_col2, feedback_col3 = st.columns(3)
                         
@@ -1436,15 +1861,15 @@ def show_ai_insights():
             background: linear-gradient(135deg, rgba(45, 55, 72, 0.8), rgba(74, 85, 104, 0.8));
             border: 1px solid rgba(29, 185, 84, 0.3);
             border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
+            padding: 32px;
+            margin: 32px 0;
             backdrop-filter: blur(10px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         ">
         """, unsafe_allow_html=True)
         
-        st.markdown('<h3 style="color: #1DB954; text-align: center; margin-bottom: 2rem;">💬 Ask TuneGenie anything about music!</h3>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align: center; color: #e2e8f0; margin-bottom: 2rem;">Get personalized music recommendations, learn about artists and genres, or ask for music advice.</p>', unsafe_allow_html=True)
+        st.markdown('<h3 style="color: #1DB954; text-align: center; margin-bottom: 32px;">💬 Ask TuneGenie anything about music!</h3>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #e2e8f0; margin-bottom: 32px;">Get personalized music recommendations, learn about artists and genres, or ask for music advice.</p>', unsafe_allow_html=True)
         
         # Enhanced chat input with examples
         col1, col2 = st.columns([3, 1])
@@ -1463,11 +1888,11 @@ def show_ai_insights():
                 background: linear-gradient(135deg, rgba(29, 185, 84, 0.1), rgba(30, 215, 96, 0.1));
                 border: 1px solid rgba(29, 185, 84, 0.2);
                 border-radius: 15px;
-                padding: 1rem;
-                margin-top: 1rem;
+                padding: 16px;
+                margin-top: 16px;
             ">
-                <h4 style="color: #1DB954; margin: 0 0 0.5rem 0;">💡 Try asking about:</h4>
-                <ul style="color: #e2e8f0; margin: 0; padding-left: 1.2rem; font-size: 0.9rem;">
+                <h4 style="color: #1DB954; margin: 0 0 8px 0;">💡 Try asking about:</h4>
+                <ul style="color: #e2e8f0; margin: 0; padding-left: 19px; font-size: 14px;">
                     <li>Moods & emotions</li>
                     <li>Activities & situations</li>
                     <li>Genres & styles</li>
@@ -1500,8 +1925,8 @@ def show_ai_insights():
                                 background: linear-gradient(135deg, rgba(45, 55, 72, 0.8), rgba(74, 85, 104, 0.8));
                                 border: 1px solid rgba(29, 185, 84, 0.3);
                                 border-radius: 15px;
-                                padding: 1.5rem;
-                                margin: 1rem 0;
+                                padding: 24px;
+                                margin: 16px 0;
                                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
                             ">
                                 <p style="color: #ffffff; line-height: 1.6; margin: 0;">{response.get('insight', 'No response received')}</p>
@@ -1529,7 +1954,7 @@ def show_ai_insights():
         # Enhanced chat history with modern styling
         if 'chat_history' in st.session_state and st.session_state.chat_history:
             st.markdown("---")
-            st.markdown('<h3 style="color: #1DB954; margin: 2rem 0 1rem 0;">📝 Chat History</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="color: #1DB954; margin: 32px 0 16px 0;">📝 Chat History</h3>', unsafe_allow_html=True)
             
             # Show last 5 conversations
             for i, chat in enumerate(reversed(st.session_state.chat_history[-5:])):
@@ -1539,12 +1964,12 @@ def show_ai_insights():
                         background: linear-gradient(135deg, rgba(45, 55, 72, 0.6), rgba(74, 85, 104, 0.6));
                         border: 1px solid rgba(29, 185, 84, 0.2);
                         border-radius: 10px;
-                        padding: 1rem;
-                        margin: 0.5rem 0;
+                        padding: 16px;
+                        margin: 8px 0;
                     ">
                         <p><strong>Question:</strong> {chat['query']}</p>
                         <p><strong>Answer:</strong> {chat['response']}</p>
-                        <p style="color: #1DB954; font-size: 0.9rem; margin: 0.5rem 0 0 0;"><em>Model: {chat['model']}</em></p>
+                        <p style="color: #1DB954; font-size: 14px; margin: 8px 0 0 0;"><em>Model: {chat['model']}</em></p>
                     </div>
                     """, unsafe_allow_html=True)
             
