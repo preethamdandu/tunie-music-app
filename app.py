@@ -13,15 +13,55 @@ from streamlit_option_menu import option_menu
 import logging
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables and configure logging once at entrypoint
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+def validate_environment():
+    """
+    Validate presence of required secrets and configuration.
+    - Accepts either SPOTIFY_* or SPOTIPY_* variable names for Spotify creds
+    - Requires redirect URI
+    - Requires at least one LLM credential: OPENAI_API_KEY or HUGGINGFACE_TOKEN
+    Raises SystemExit with a clear message if anything critical is missing.
+    """
+    import os
+    missing = []
+
+    spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID') or os.getenv('SPOTIPY_CLIENT_ID')
+    spotify_client_secret = os.getenv('SPOTIFY_CLIENT_SECRET') or os.getenv('SPOTIPY_CLIENT_SECRET')
+    spotify_redirect_uri = os.getenv('SPOTIFY_REDIRECT_URI') or os.getenv('SPOTIPY_REDIRECT_URI')
+
+    if not spotify_client_id:
+        missing.append('SPOTIFY_CLIENT_ID (or SPOTIPY_CLIENT_ID)')
+    if not spotify_client_secret:
+        missing.append('SPOTIFY_CLIENT_SECRET (or SPOTIPY_CLIENT_SECRET)')
+    if not spotify_redirect_uri:
+        missing.append('SPOTIFY_REDIRECT_URI (or SPOTIPY_REDIRECT_URI)')
+
+    # LLM credentials: require at least one
+    has_openai = bool(os.getenv('OPENAI_API_KEY'))
+    has_hf = bool(os.getenv('HUGGINGFACE_TOKEN'))
+    if not (has_openai or has_hf):
+        missing.append('OPENAI_API_KEY (or provide HUGGINGFACE_TOKEN for fallback)')
+
+    if missing:
+        details = '\n - ' + '\n - '.join(missing)
+        raise SystemExit(
+            f"Missing required environment variables. Please set the following in your .env file:{details}"
+        )
+
+# Validate secrets on startup
+validate_environment()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Import TuneGenie components
 from src.workflow import MultiAgentWorkflow
+from src.intent_classifier import IntentClassifier
 from src.utils import DataProcessor, Visualizer, FileManager, MetricsCalculator
 
 # Page configuration
@@ -1060,17 +1100,17 @@ def show_dashboard():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("🎵 Generate Mood Playlist", use_container_width=True, key="quick_playlist"):
+            if st.button("🎵 Generate Mood Playlist", key="quick_playlist"):
                 st.session_state.show_playlist_generation = True
                 st.rerun()
         
         with col2:
-            if st.button("📊 Analyze Profile", use_container_width=True, key="quick_analyze"):
+            if st.button("📊 Analyze Profile", key="quick_analyze"):
                 st.session_state.show_user_analysis = True
                 st.rerun()
         
         with col3:
-            if st.button("🤖 Ask AI", use_container_width=True, key="quick_ai"):
+            if st.button("🤖 Ask AI", key="quick_ai"):
                 st.session_state.show_ai_insights = True
                 st.rerun()
         
@@ -1088,7 +1128,11 @@ def show_dashboard():
 
 def show_playlist_generation():
     """Display playlist generation interface"""
-    st.markdown('<h2 class="sub-header">🎯 Generate Personalized Playlist</h2>', unsafe_allow_html=True)
+    # Show which strategy is active (feature flag)
+    llm_driven_flag = os.getenv('FEATURE_FLAG_LLM_DRIVEN', 'False').strip().lower() in ('1','true','yes','on')
+    strategy_banner = "🤖 LLM-Driven mode is ENABLED" if llm_driven_flag else "🧮 Collaborative Filtering (CF-First) mode"
+    st.markdown(f'<h2 class="sub-header">🎯 Generate Personalized Playlist</h2>', unsafe_allow_html=True)
+    st.caption(strategy_banner)
     
     # Check if workflow is ready
     workflow_ready, workflow = check_workflow_ready()
@@ -1499,6 +1543,14 @@ def show_playlist_generation():
                     label_visibility="collapsed",
                     height=120
                 )
+
+                # Keywords input
+                st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                keywords_input = st.text_input(
+                    "Enter keywords (e.g., artist: The Weeknd, title: Blinding Lights, album: After Hours, genre: pop)",
+                    value="",
+                    key="keywords_input",
+                )
             
             # ===== COLUMN 2: ACTIVITY & LANGUAGE =====
             with col2:
@@ -1631,16 +1683,28 @@ def show_playlist_generation():
                         <div class="metric-value" style="font-size: 20px; color: #9B59B6;">{}</div>
                     </div>
                     """.format(n_recommendations), unsafe_allow_html=True)
+
+                # Show keywords summary if provided
+                if keywords_input.strip():
+                    st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
+                    st.info(f"🔍 Keywords: {keywords_input}")
                 
                 st.markdown('</div>', unsafe_allow_html=True)
             
             # ===== PERFECT GENERATE BUTTON =====
             st.markdown('<div class="spacing-div"></div>', unsafe_allow_html=True)
             
+            # Advanced Settings Expander
+            with st.expander("Advanced Settings"):
+                must_be_instrumental = st.checkbox("Must be instrumental", value=False)
+                search_strictness = st.slider(
+                    "Search Strictness (0 = broad, 2 = strict)", min_value=0, max_value=2, value=1,
+                    help="Maps to Progressive Relaxation stages: 2=strict, 1=relaxed, 0=broad"
+                )
+
             # Submit button
             submit_button = st.form_submit_button(
                 "🚀 Generate My Perfect Playlist",
-                use_container_width=True,
                 type="primary"
             )
         
@@ -1654,24 +1718,65 @@ def show_playlist_generation():
             with st.spinner("🎵 TuneGenie is crafting your perfect playlist..."):
                 try:
                     # Execute playlist generation workflow
+                    # Use IntentClassifier for strategy selection
+                    # Frontend Capture: log all user inputs for this request
+                    try:
+                        logger.info("FrontendCapture | inputs=%s", json.dumps({
+                            'mood': mood,
+                            'activity': activity,
+                            'keywords': keywords_input,
+                            'language_preference': language_preference,
+                            'must_be_instrumental': must_be_instrumental,
+                            'search_strictness': search_strictness,
+                            'num_tracks': n_recommendations
+                        }, ensure_ascii=False))
+                    except Exception:
+                        pass
+                    intent = IntentClassifier()
+                    # Intent Classification: log inputs and decision
+                    try:
+                        logger.info("IntentClassification | keywords=%s", (keywords_input or ''))
+                    except Exception:
+                        pass
+                    strategy = intent.classify(keywords_input or '')
+                    try:
+                        logger.info("IntentClassification | strategy=%s", strategy)
+                    except Exception:
+                        pass
                     result = workflow.execute_workflow(
                         'playlist_generation',
                         mood=mood,
                         activity=activity,
                         user_context=user_context,
                         num_tracks=n_recommendations,
-                        language_preference=language_preference
+                        language_preference=language_preference,
+                        keywords=keywords_input,
+                        must_be_instrumental=must_be_instrumental,
+                        search_strictness=search_strictness,
+                        strategy=strategy
                     )
                     
                     if 'error' not in result:
-                        # Success message
-                        st.success("🎉 Playlist Generated Successfully!")
+                        # Success message with tracks added vs generated
+                        generated = len(result.get('final_playlist', {}).get('tracks', []) or [])
+                        added = int(result.get('spotify_playlist', {}).get('tracks_added', 0) or 0)
+                        if added == generated and generated > 0:
+                            st.success(f"🎉 Playlist Generated Successfully! Added {added}/{generated} tracks to Spotify.")
+                        else:
+                            st.warning(f"✅ Playlist generated. Added {added}/{generated} tracks to Spotify.")
+
+                        # Display any warnings from backend
+                        warnings_list = result.get('warnings', []) or []
+                        for w in warnings_list:
+                            st.warning(f"⚠️ {w}")
                         
                         # Display results
                         col1, col2 = st.columns([2, 1])
                         
                         with col1:
-                            st.markdown('<h3 style="color: #1DB954; margin-bottom: 16px;">📋 Generated Playlist</h3>', unsafe_allow_html=True)
+                            # Indicate active strategy in UI
+                            strategy_label = ("Niche" if strategy == 'niche_query' else ("LLM-Driven" if (os.getenv('FEATURE_FLAG_LLM_DRIVEN', 'False').strip().lower() in ('1','true','yes','on')) else "CF-First"))
+                            st.markdown(f'<h3 style="color: #1DB954; margin-bottom: 16px;">📋 Generated Playlist ({strategy_label})</h3>', unsafe_allow_html=True)
                             
                             if 'spotify_playlist' in result and 'spotify_url' in result['spotify_playlist']:
                                 playlist_name = result['final_playlist'].get('playlist_name', 'TuneGenie Playlist')
@@ -1707,6 +1812,21 @@ def show_playlist_generation():
                                 st.metric("Collaborative Tracks", stats.get('collaborative_tracks', 0))
                                 st.metric("AI-Enhanced Tracks", stats.get('ai_enhanced_tracks', 0))
                                 st.metric("Total Processing Time", f"{stats.get('total_time', 0):.2f}s")
+
+                            # Keyword validation summary
+                            kv = result.get('keyword_validation', {}) or {}
+                            if kv.get('enabled'):
+                                st.markdown('<h4 style="color: #1DB954; margin-top: 16px;">🔎 Keyword Match</h4>', unsafe_allow_html=True)
+                                st.metric("Coverage", f"{int((kv.get('coverage_score', 0)*100))}%")
+                                st.caption(f"Matched {kv.get('matched_terms', 0)} of {kv.get('total_terms', 0)} terms")
+                                unmet = kv.get('unmet_keywords', [])
+                                if unmet:
+                                    st.warning("Unmet keywords: " + ", ".join(unmet[:5]))
+                                examples = kv.get('examples', [])
+                                if examples:
+                                    st.caption("Examples:")
+                                    for ex in examples[:3]:
+                                        st.caption(f"- {ex.get('keyword')}: {ex.get('track')} by {', '.join(ex.get('artists', []) or [])}")
                         
                         # Feedback section
                         st.markdown("---")
@@ -1758,7 +1878,7 @@ def show_user_analysis():
             st.markdown("Get insights into your listening habits, favorite genres, and music preferences.")
         
         with col2:
-            if st.button("🔍 Run Analysis", use_container_width=True):
+            if st.button("🔍 Run Analysis"):
                 with st.spinner("📊 Analyzing your music profile..."):
                     try:
                         # Execute user analysis workflow
@@ -1793,7 +1913,7 @@ def show_user_analysis():
                                         'Genre': analysis['top_genres'][:10],
                                         'Rank': range(1, min(11, len(analysis['top_genres']) + 1))
                                     })
-                                    st.dataframe(genres_df, use_container_width=True)
+                                    st.dataframe(genres_df)
                                 
                                 # Listening patterns
                                 if 'listening_patterns' in analysis:
@@ -1806,14 +1926,14 @@ def show_user_analysis():
                                         }
                                         for time_range, data in analysis['listening_patterns'].items()
                                     ])
-                                    st.dataframe(patterns_df, use_container_width=True)
+                                    st.dataframe(patterns_df)
                                 
                                 # Create visualization
                                 st.markdown("### 📊 Profile Visualization")
                                 try:
                                     # Create user profile chart
                                     fig = create_user_profile_chart(analysis)
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig)
                                 except Exception as e:
                                     st.warning(f"Could not create visualization: {str(e)}")
                                     
@@ -1823,13 +1943,13 @@ def show_user_analysis():
                                     if 'top_genres' in analysis and analysis['top_genres']:
                                         st.markdown("### 🎭 Top Genres Distribution")
                                         genres_fig = create_genres_chart(analysis['top_genres'])
-                                        st.plotly_chart(genres_fig, use_container_width=True)
+                                        st.plotly_chart(genres_fig)
                                     
                                     # Listening Patterns Chart
                                     if 'listening_patterns' in analysis and analysis['listening_patterns']:
                                         st.markdown("### 📈 Listening Patterns Over Time")
                                         patterns_fig = create_listening_patterns_chart(analysis['listening_patterns'])
-                                        st.plotly_chart(patterns_fig, use_container_width=True)
+                                        st.plotly_chart(patterns_fig)
                                         
                                 except Exception as e:
                                     st.warning(f"Could not create additional visualizations: {str(e)}")
@@ -1905,7 +2025,7 @@ def show_ai_insights():
         st.markdown("</div>", unsafe_allow_html=True)
         
         # Enhanced submit button
-        if st.button("🤖 Ask AI", use_container_width=True, disabled=not user_query.strip(), type="primary"):
+        if st.button("🤖 Ask AI", disabled=not user_query.strip(), type="primary"):
             if user_query.strip():
                 # Modern loading animation
                 with st.spinner("🤖 TuneGenie is thinking..."):
@@ -2215,7 +2335,7 @@ def show_performance():
                             yaxis_title="Frequency",
                             height=400
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig)
                     else:
                         st.info("No execution time data available for visualization")
                 else:
@@ -2237,7 +2357,7 @@ def show_performance():
                 for exec_record in workflow_history[-10:]  # Last 10 executions
             ])
             
-            st.dataframe(executions_df, use_container_width=True)
+            st.dataframe(executions_df)
             
         else:
             st.info("No workflow executions found. Run some workflows to see performance data.")

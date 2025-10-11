@@ -15,11 +15,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Load environment and logging in app.py (entrypoint)
 logger = logging.getLogger(__name__)
 
 class LLMAgent:
@@ -121,19 +117,87 @@ Please provide:
 
 Format your response as JSON with keys: mood_analysis, music_characteristics, musical_elements, considerations""",
             
-            'playlist_enhancement': """You are a music curator and AI assistant. Enhance these collaborative filtering recommendations with contextual understanding.
+            'playlist_enhancement': """You are a senior music curator and recommendation auditor. Your job is to correct and improve a raw SVD (collaborative filtering) candidate list so it truly matches the user's mood and activity context.
+
+Think step-by-step, but return ONLY a final JSON object for the actual task. Do not include any extra commentary outside JSON in your final answer.
+
+Context you will receive:
+- User Profile: {user_profile}
+- Current Context: {context}  
+  (The context string contains the user's mood and activity.)
+- Collaborative Recommendations (SVD): {collaborative_recs}
+
+Your responsibilities:
+1) Diagnose issues with the SVD list relative to the context (energy, valence, lyrics vs instrumental, language, tempo, cohesion, thematic fit).
+2) Propose concrete adjustments: which tracks to remove, and what types of tracks to add (with reasons).
+3) Produce a compelling, context-appropriate description and a concise, on-brand playlist name.
+
+Return ONLY JSON with keys: 
+- analysis: string (brief assessment of how well the raw list fits the mood/activity)
+- adjustments: array of objects with any of the following fields:
+  - remove: string (track name or identifier) and reason: string
+  - add_hint: object describing the ideal replacement (e.g., {\"genre\": \"lo-fi\", \"energy\": \"low\", \"instrumental\": true, \"why\": \"supports deep focus\"})
+- description: string (1–3 sentences, evocative, mood/activity aligned)
+- playlist_name: string (short, memorable, reflects mood/activity)
+
+
+FEW-SHOT EXAMPLES (for learning):
+
+Example 1 — Fixing a “Calm Studying” mismatch
+Input
+Current Context: \"Mood: Calm, Activity: Studying\"
+Collaborative Recommendations (SVD):
+[
+  {\"name\": \"POWER\", \"artists\": [\"Kanye West\"], \"energy\": 0.92},
+  {\"name\": \"Uptown Funk\", \"artists\": [\"Mark Ronson\", \"Bruno Mars\"], \"energy\": 0.89},
+  {\"name\": \"Don’t Start Now\", \"artists\": [\"Dua Lipa\"], \"energy\": 0.85}
+]
+
+Expected JSON
+{
+  \"analysis\": \"The list is high-energy and lyric-heavy, unsuitable for calm study focus.\",
+  \"adjustments\": [
+    {\"remove\": \"POWER — Kanye West\", \"reason\": \"energy and lyrical intensity disrupt focus\"},
+    {\"remove\": \"Uptown Funk — Mark Ronson, Bruno Mars\", \"reason\": \"party vibe conflicts with calm study\"},
+    {\"remove\": \"Don’t Start Now — Dua Lipa\", \"reason\": \"dance-pop too energetic for calm context\"},
+    {\"add_hint\": {\"genre\": \"lo-fi\", \"energy\": \"low\", \"instrumental\": true, \"why\": \"supports deep work without lyrical distraction\"}},
+    {\"add_hint\": {\"genre\": \"ambient\", \"energy\": \"very low\", \"acoustic\": true, \"why\": \"gentle textures sustain a calm mood\"}}
+  ],
+  \"description\": \"Soft lo-fi and airy ambient layers to keep your focus steady and mind calm.\",
+  \"playlist_name\": \"Calm Focus Flow\"
+}
+
+Example 2 — Fixing an “Energetic Workout” mismatch
+Input
+Current Context: \"Mood: Energetic, Activity: Exercising\"
+Collaborative Recommendations (SVD):
+[
+  {\"name\": \"Skinny Love\", \"artists\": [\"Bon Iver\"], \"energy\": 0.25},
+  {\"name\": \"Holocene\", \"artists\": [\"Bon Iver\"], \"energy\": 0.31},
+  {\"name\": \"The Night We Met\", \"artists\": [\"Lord Huron\"], \"energy\": 0.28}
+]
+
+Expected JSON
+{
+  \"analysis\": \"The list is too slow and introspective; it lacks drive for a workout.\",
+  \"adjustments\": [
+    {\"remove\": \"Skinny Love — Bon Iver\", \"reason\": \"too low energy and melancholic\"},
+    {\"remove\": \"Holocene — Bon Iver\", \"reason\": \"slow build, not motivating\"},
+    {\"remove\": \"The Night We Met — Lord Huron\", \"reason\": \"ballad pacing unsuitable for exercise\"},
+    {\"add_hint\": {\"genre\": \"edm\", \"energy\": \"high\", \"tempo_bpm\": \"130-160\", \"why\": \"sustains momentum\"}},
+    {\"add_hint\": {\"genre\": \"hip hop\", \"energy\": \"high\", \"why\": \"punchy rhythm elevates intensity\"}}
+  ],
+  \"description\": \"High-octane beats and driving rhythms to push every rep and sprint.\",
+  \"playlist_name\": \"Max Power Set\"
+}
+
+
+NOW DO THE ACTUAL TASK
+Using the provided inputs below, output ONLY a JSON object with exactly the keys: analysis, adjustments, description, playlist_name. Do not include any examples or commentary.
 
 User Profile: {user_profile}
 Current Context: {context}
-Collaborative Recommendations: {collaborative_recs}
-
-Please:
-1. Analyze the recommendations for context appropriateness
-2. Suggest any mood or context-specific adjustments
-3. Provide a compelling playlist description
-4. Suggest a playlist name that reflects the mood/context
-
-Format your response as JSON with keys: analysis, adjustments, description, playlist_name""",
+Collaborative Recommendations: {collaborative_recs}""",
             
             'track_analysis': """You are a music analyst. Analyze these tracks and provide insights about their musical characteristics and emotional impact.
 
@@ -237,6 +301,261 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
             logger.error(f"Failed to generate playlist: {e}")
             # Fallback playlist generation
             return self._generate_fallback_playlist(user_data, mood, activity, available_tracks, num_tracks)
+
+    def generate_search_strategy(self, prompt: str) -> Dict:
+        """
+        Generate a comprehensive search strategy based on mood/context analysis
+        
+        Returns a strategy with genres, audio features, search queries, etc.
+        """
+        try:
+            if self.model_type == "openai":
+                system_msg = (
+                    "You are a music expert who understands how mood, activity, and context "
+                    "translate into specific musical characteristics. Generate precise search "
+                    "strategies that will find the perfect tracks."
+                )
+                
+                messages = [
+                    SystemMessage(content=system_msg),
+                    HumanMessage(content=prompt + "\n\nReturn ONLY valid JSON."),
+                ]
+                
+                response = self.llm(messages)
+                text = getattr(response, 'content', '') or getattr(response, 'text', '')
+                
+                try:
+                    strategy = json.loads(text)
+                    # Ensure required fields
+                    strategy.setdefault('genres', ['pop', 'indie', 'electronic'])
+                    strategy.setdefault('audio_features', {
+                        'energy': [0.4, 0.7],
+                        'valence': [0.5, 0.8],
+                        'tempo': [90, 130]
+                    })
+                    strategy.setdefault('search_queries', [])
+                    strategy.setdefault('themes', [])
+                    strategy.setdefault('era', 'current')
+                    
+                    return strategy
+                except json.JSONDecodeError:
+                    logger.warning("Failed to parse LLM strategy response as JSON")
+                    # Try to extract key information from text
+                    return self._extract_strategy_from_text(text)
+            
+            # Fallback for Hugging Face or other models
+            return self._generate_heuristic_strategy(prompt)
+            
+        except Exception as e:
+            logger.error(f"Failed to generate search strategy: {e}")
+            return self._generate_heuristic_strategy(prompt)
+    
+    def _extract_strategy_from_text(self, text: str) -> Dict:
+        """Extract strategy components from free-form text"""
+        strategy = {
+            'genres': [],
+            'audio_features': {
+                'energy': [0.4, 0.7],
+                'valence': [0.5, 0.8],
+                'tempo': [90, 130]
+            },
+            'search_queries': [],
+            'themes': [],
+            'era': 'current'
+        }
+        
+        # Extract genres mentioned
+        common_genres = ['pop', 'rock', 'hip hop', 'electronic', 'jazz', 'classical', 
+                        'indie', 'r&b', 'country', 'folk', 'metal', 'punk', 'reggae',
+                        'blues', 'soul', 'funk', 'disco', 'house', 'techno', 'ambient']
+        
+        text_lower = text.lower()
+        for genre in common_genres:
+            if genre in text_lower:
+                strategy['genres'].append(genre)
+        
+        # Extract energy levels
+        if any(word in text_lower for word in ['high energy', 'energetic', 'upbeat', 'intense']):
+            strategy['audio_features']['energy'] = [0.7, 1.0]
+        elif any(word in text_lower for word in ['low energy', 'calm', 'relaxed', 'mellow']):
+            strategy['audio_features']['energy'] = [0.1, 0.4]
+        
+        # Extract valence (mood)
+        if any(word in text_lower for word in ['happy', 'joyful', 'positive', 'uplifting']):
+            strategy['audio_features']['valence'] = [0.7, 1.0]
+        elif any(word in text_lower for word in ['sad', 'melancholic', 'dark', 'somber']):
+            strategy['audio_features']['valence'] = [0.0, 0.3]
+        
+        # Extract tempo
+        if 'fast' in text_lower or 'quick' in text_lower:
+            strategy['audio_features']['tempo'] = [120, 180]
+        elif 'slow' in text_lower:
+            strategy['audio_features']['tempo'] = [60, 90]
+        
+        # Generate basic search queries from genres
+        for genre in strategy['genres'][:3]:
+            strategy['search_queries'].append(f"genre:{genre}")
+        
+        return strategy
+    
+    def _generate_heuristic_strategy(self, prompt: str) -> Dict:
+        """Generate a heuristic-based strategy from the prompt"""
+        # Extract mood and activity from prompt
+        prompt_lower = prompt.lower()
+        
+        # Default strategy
+        strategy = {
+            'genres': ['pop', 'indie', 'electronic'],
+            'audio_features': {
+                'energy': [0.4, 0.7],
+                'valence': [0.5, 0.8],
+                'tempo': [90, 130],
+                'danceability': [0.4, 0.7],
+                'acousticness': [0.2, 0.6]
+            },
+            'search_queries': [],
+            'themes': [],
+            'era': 'current'
+        }
+        
+        # Mood-based adjustments
+        if 'happy' in prompt_lower or 'excited' in prompt_lower:
+            strategy['genres'] = ['pop', 'dance', 'indie pop']
+            strategy['audio_features']['energy'] = [0.6, 0.9]
+            strategy['audio_features']['valence'] = [0.7, 1.0]
+            strategy['themes'] = ['uplifting', 'positive', 'feel-good']
+        elif 'sad' in prompt_lower or 'melancholic' in prompt_lower:
+            strategy['genres'] = ['indie folk', 'singer-songwriter', 'ambient']
+            strategy['audio_features']['energy'] = [0.1, 0.4]
+            strategy['audio_features']['valence'] = [0.0, 0.3]
+            strategy['themes'] = ['emotional', 'introspective', 'melancholic']
+        elif 'calm' in prompt_lower or 'relaxed' in prompt_lower:
+            strategy['genres'] = ['ambient', 'lo-fi', 'jazz']
+            strategy['audio_features']['energy'] = [0.1, 0.3]
+            strategy['audio_features']['valence'] = [0.4, 0.7]
+            strategy['themes'] = ['peaceful', 'serene', 'meditative']
+        elif 'energetic' in prompt_lower or 'motivated' in prompt_lower:
+            strategy['genres'] = ['electronic', 'hip hop', 'rock']
+            strategy['audio_features']['energy'] = [0.7, 1.0]
+            strategy['audio_features']['valence'] = [0.5, 0.9]
+            strategy['themes'] = ['powerful', 'motivating', 'dynamic']
+        
+        # Activity-based adjustments
+        if 'working' in prompt_lower or 'studying' in prompt_lower:
+            strategy['audio_features']['energy'] = [0.3, 0.6]
+            strategy['themes'].append('focus')
+            strategy['search_queries'].append('focus music')
+        elif 'exercising' in prompt_lower or 'workout' in prompt_lower:
+            strategy['audio_features']['energy'] = [0.7, 1.0]
+            strategy['audio_features']['tempo'] = [120, 160]
+            strategy['themes'].append('workout')
+            strategy['search_queries'].append('workout music')
+        elif 'cooking' in prompt_lower:
+            strategy['themes'].append('cooking vibes')
+            strategy['search_queries'].append('cooking playlist')
+        
+        # Generate search queries
+        for genre in strategy['genres']:
+            strategy['search_queries'].append(f"genre:{genre}")
+        
+        # Add mood-based queries
+        for theme in strategy['themes'][:2]:
+            strategy['search_queries'].append(f"{theme} music")
+        
+        return strategy
+    
+    def validate_playlist_against_keywords(self, parsed_keywords: Dict[str, List[str]], tracks: List[Dict]) -> Dict:
+        """Validate a playlist against parsed keywords using the configured LLM, with compact JSON output.
+        The LLM is prompted to reason and then provide a JSON summary only. If the model is huggingface
+        text completion, we use a deterministic heuristic and place reasoning-like notes in a field.
+        """
+        try:
+            # Prepare a compact context for evaluation
+            keywords_summary = {k: parsed_keywords.get(k, [])[:10] for k in ['artists','titles','albums','genres','raw']}
+            track_snippets = [
+                {
+                    'name': t.get('name', ''),
+                    'artists': t.get('artists', [])[:3],
+                    'album': t.get('album', ''),
+                }
+                for t in tracks[:50]
+            ]
+
+            if self.model_type == "openai":
+                system_msg = (
+                    "You are a strict validator that checks whether a playlist aligns with user-specified keywords. "
+                    "Think step-by-step but only return a final JSON object."
+                )
+                user_prompt = (
+                    "Keywords (parsed): {keywords}\n"
+                    "Tracks (first 50): {tracks}\n\n"
+                    "Evaluate coverage of keywords across artists, titles, albums, and raw terms.\n"
+                    "Return ONLY compact JSON with keys: coverage_score (0-1), matched_terms, total_terms, unmet_keywords (list), "
+                    "examples (array of up to 10 objects with keys: keyword, track, artists)."
+                ).format(keywords=keywords_summary, tracks=track_snippets)
+
+                messages = [
+                    SystemMessage(content=system_msg),
+                    HumanMessage(content=user_prompt),
+                ]
+                resp = self.llm(messages)
+                text = getattr(resp, 'content', '') or getattr(resp, 'text', '')
+                try:
+                    data = json.loads(text)
+                    # basic sanity
+                    data.setdefault('coverage_score', 0)
+                    data.setdefault('matched_terms', 0)
+                    data.setdefault('total_terms', 0)
+                    data.setdefault('unmet_keywords', [])
+                    data.setdefault('examples', [])
+                    data['enabled'] = True
+                    return data
+                except Exception:
+                    # Fall back to heuristic if parsing fails
+                    pass
+
+            # Heuristic fallback (also used for huggingface mode)
+            total_terms = sum(len(keywords_summary.get(k, [])) for k in ['artists','titles','albums','genres','raw'])
+            matched_terms = 0
+            per_term = {}
+            examples = []
+            def fields(track):
+                name = (track.get('name') or '').lower()
+                album = (track.get('album') or '').lower()
+                artists = [a.lower() for a in (track.get('artists') or [])]
+                return name, album, artists
+            for key in ['artists','titles','albums','genres','raw']:
+                for kw in keywords_summary.get(key, []):
+                    kwl = kw.lower()
+                    count = 0
+                    for tr in tracks:
+                        name, album, artists = fields(tr)
+                        if key == 'artists' and any(kwl in a for a in artists):
+                            count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                        if key == 'titles' and kwl in name:
+                            count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                        if key == 'albums' and kwl in album:
+                            count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                        if key == 'genres' and (kwl in name or kwl in album or any(kwl in a for a in artists)):
+                            count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                        if key == 'raw' and (kwl in name or kwl in album or any(kwl in a for a in artists)):
+                            count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                    per_term[kw] = count
+                    if count > 0:
+                        matched_terms += 1
+            coverage = (matched_terms / total_terms) if total_terms else 1.0
+            unmet = [kw for kw, c in per_term.items() if c == 0]
+            return {
+                'enabled': True,
+                'coverage_score': round(coverage, 3),
+                'matched_terms': matched_terms,
+                'total_terms': total_terms,
+                'unmet_keywords': unmet,
+                'examples': examples[:10]
+            }
+        except Exception as e:
+            logger.error(f"Keyword validation failed: {e}")
+            return {'enabled': False, 'error': str(e)}
     
     def analyze_tracks(self, tracks: List[Dict], context: str) -> Dict:
         """

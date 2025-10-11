@@ -15,9 +15,73 @@ import joblib
 import logging
 from datetime import datetime
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+class IDMapper:
+    """
+    Maintains two-way mappings between raw Spotify IDs (users/tracks) and
+    Surprise inner integer IDs. Persisted as JSON alongside the trained model.
+    """
+    def __init__(self):
+        self.user_to_inner: Dict[str, int] = {}
+        self.inner_to_user: Dict[int, str] = {}
+        self.item_to_inner: Dict[str, int] = {}
+        self.inner_to_item: Dict[int, str] = {}
+
+    @classmethod
+    def from_trainset(cls, trainset) -> 'IDMapper':
+        mapper = cls()
+        try:
+            for inner_uid in range(trainset.n_users):
+                raw_uid = trainset.to_raw_uid(inner_uid)
+                mapper.user_to_inner[raw_uid] = inner_uid
+                mapper.inner_to_user[inner_uid] = raw_uid
+            for inner_iid in range(trainset.n_items):
+                raw_iid = trainset.to_raw_iid(inner_iid)
+                mapper.item_to_inner[raw_iid] = inner_iid
+                mapper.inner_to_item[inner_iid] = raw_iid
+        except Exception as e:
+            logger.warning(f"Failed building IDMapper from trainset: {e}")
+        return mapper
+
+    def to_inner_user(self, raw_user_id: str) -> Optional[int]:
+        return self.user_to_inner.get(raw_user_id)
+
+    def to_inner_item(self, raw_item_id: str) -> Optional[int]:
+        return self.item_to_inner.get(raw_item_id)
+
+    def to_raw_user(self, inner_id: int) -> Optional[str]:
+        return self.inner_to_user.get(inner_id)
+
+    def to_raw_item(self, inner_id: int) -> Optional[str]:
+        return self.inner_to_item.get(inner_id)
+
+    def save(self, json_path: str) -> None:
+        try:
+            data = {
+                'user_to_inner': self.user_to_inner,
+                'inner_to_user': {str(k): v for k, v in self.inner_to_user.items()},
+                'item_to_inner': self.item_to_inner,
+                'inner_to_item': {str(k): v for k, v in self.inner_to_item.items()},
+            }
+            with open(json_path, 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to save IDMapper to {json_path}: {e}")
+
+    @classmethod
+    def load(cls, json_path: str) -> 'IDMapper':
+        mapper = cls()
+        try:
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            mapper.user_to_inner = data.get('user_to_inner', {})
+            mapper.inner_to_user = {int(k): v for k, v in (data.get('inner_to_user', {}) or {}).items()}
+            mapper.item_to_inner = data.get('item_to_inner', {})
+            mapper.inner_to_item = {int(k): v for k, v in (data.get('inner_to_item', {}) or {}).items()}
+        except Exception as e:
+            logger.warning(f"Failed to load IDMapper from {json_path}: {e}")
+        return mapper
 
 class CollaborativeFilteringRecommender:
     """Collaborative filtering recommendation engine using Surprise library"""
@@ -32,10 +96,10 @@ class CollaborativeFilteringRecommender:
         self.algorithm = algorithm
         self.model = None
         self.trainset = None
-        self.user_mapping = {}
-        self.item_mapping = {}
-        self.reverse_user_mapping = {}
+        # For UI display/metadata by raw track id
         self.reverse_item_mapping = {}
+        # Stable persisted mapping between raw ids and Surprise inner ids
+        self.id_mapper: Optional[IDMapper] = None
         
         # Try to load the most recent trained model
         self._load_latest_model()
@@ -65,6 +129,150 @@ class CollaborativeFilteringRecommender:
                 
         except Exception as e:
             logger.warning(f"Failed to load latest model: {e}")
+
+    def cold_start_recommendations(self, spotify_client, mood: str, activity: str,
+                                   n_recommendations: int = 20,
+                                   language_preference: str = "Any Language") -> List[Dict]:
+        """Cold-start fallback: recommend globally popular tracks aligned to mood/activity.
+
+        Strategy:
+        - Build a set of search queries using mood/activity (and language if provided)
+        - Fetch tracks via Spotify search
+        - Retrieve audio features and score alignment to a simple mood profile
+        - Rank by 0.7 * alignment + 0.3 * normalized popularity
+        - Return top N tracks in our standard format
+        """
+        try:
+            if not spotify_client:
+                logger.warning("Spotify client not available for cold-start fallback")
+                return []
+
+            # Generate search queries
+            mood_l = (mood or '').lower()
+            activity_l = (activity or '').lower()
+
+            queries = [
+                f"{mood_l} {activity_l} music",
+                f"popular {mood_l} songs",
+                f"trending {mood_l} {activity_l}",
+                f"{activity_l} playlist",
+                f"{mood_l} vibes",
+            ]
+
+            # Add language hints if applicable (English treated as broad)
+            if language_preference and language_preference != "Any Language":
+                lang_q = language_preference.lower()
+                queries = [f"{lang_q} {q}" for q in queries]
+
+            # Helper to map mood to target features
+            def target_profile() -> Dict[str, float]:
+                profile = {
+                    'energy': 0.5, 'valence': 0.5, 'danceability': 0.5,
+                    'acousticness': 0.3, 'instrumentalness': 0.2
+                }
+                if 'sad' in mood_l or 'melanch' in mood_l:
+                    profile.update({'energy': 0.3, 'valence': 0.2, 'acousticness': 0.5})
+                if 'happy' in mood_l or 'uplift' in mood_l:
+                    profile.update({'energy': 0.7, 'valence': 0.8, 'danceability': 0.6})
+                if 'calm' in mood_l or 'relax' in mood_l:
+                    profile.update({'energy': 0.3, 'valence': 0.6, 'acousticness': 0.5})
+                if 'energetic' in mood_l or 'motivated' in mood_l:
+                    profile.update({'energy': 0.8, 'valence': 0.6})
+                if 'focus' in activity_l or 'study' in activity_l:
+                    profile.update({'energy': min(profile['energy'], 0.4), 'instrumentalness': 0.4})
+                if 'exercise' in activity_l or 'workout' in activity_l:
+                    profile.update({'energy': 0.85, 'danceability': 0.7})
+                return profile
+
+            target = target_profile()
+
+            def vec(features: Dict[str, float]) -> List[float]:
+                return [
+                    float(features.get('danceability', 0.0)),
+                    float(features.get('energy', 0.0)),
+                    float(features.get('valence', 0.0)),
+                    float(features.get('acousticness', 0.0)),
+                    float(features.get('instrumentalness', 0.0)),
+                ]
+
+            def cosine(a: List[float], b: List[float]) -> float:
+                import math
+                if not a or not b or len(a) != len(b):
+                    return 0.0
+                dot = sum(x*y for x, y in zip(a, b))
+                na = math.sqrt(sum(x*x for x in a))
+                nb = math.sqrt(sum(y*y for y in b))
+                if na == 0 or nb == 0:
+                    return 0.0
+                return dot / (na * nb)
+
+            # Aggregate tracks from queries
+            seen = set()
+            candidates: List[Dict] = []
+            per_query = max(10, min(40, n_recommendations * 2))
+            for q in queries:
+                try:
+                    results = spotify_client.search_tracks(q, limit=per_query)
+                except Exception as e:
+                    logger.debug(f"Search failed for '{q}': {e}")
+                    continue
+                for t in results:
+                    tid = t.get('id')
+                    if not tid or tid in seen:
+                        continue
+                    seen.add(tid)
+                    candidates.append(t)
+                    if len(candidates) >= n_recommendations * 5:
+                        break
+                if len(candidates) >= n_recommendations * 5:
+                    break
+
+            if not candidates:
+                logger.info("No candidates found for cold-start fallback")
+                return []
+
+            # Fetch audio features and score
+            id_list = [t.get('id') for t in candidates if t.get('id')]
+            try:
+                feats = spotify_client.get_track_features(id_list)
+            except Exception as e:
+                logger.debug(f"Failed to fetch audio features: {e}")
+                feats = []
+
+            target_vec = vec(target)
+            id_to_feat = {}
+            for f in feats or []:
+                if not f or not f.get('id'):
+                    continue
+                id_to_feat[f['id']] = vec(f)
+
+            scored: List[Tuple[float, Dict]] = []
+            for t in candidates:
+                tid = t.get('id')
+                pop = float(t.get('popularity', 50)) / 100.0
+                align = 0.0
+                if tid in id_to_feat:
+                    align = cosine(id_to_feat[tid], target_vec)
+                final_score = 0.7 * align + 0.3 * pop
+                scored.append((final_score, t))
+
+            scored.sort(key=lambda x: x[0], reverse=True)
+            top = [s for _, s in scored[:n_recommendations]]
+
+            recs: List[Dict] = []
+            for t in top:
+                recs.append({
+                    'track_id': t.get('id'),
+                    'name': t.get('name', 'Unknown Track'),
+                    'artists': t.get('artists', ['Unknown Artist']),
+                    'score': round(float(t.get('popularity', 50)) / 100.0, 3)
+                })
+
+            logger.info(f"Cold-start produced {len(recs)} mood-aligned popular tracks")
+            return recs
+        except Exception as e:
+            logger.error(f"Cold-start recommendations failed: {e}")
+            return []
     
     def _initialize_model(self):
         """Initialize the recommendation model based on algorithm choice"""
@@ -144,26 +352,15 @@ class CollaborativeFilteringRecommender:
                 logger.warning("No interaction data found")
                 return pd.DataFrame()
             
-            # Create user and item mappings
+            # Build item metadata keyed by RAW Spotify track id
             unique_users = df['user_id'].unique()
             unique_items = df['item_id'].unique()
-            
-            for i, user_id in enumerate(unique_users):
-                self.user_mapping[user_id] = i
-                self.reverse_user_mapping[i] = user_id
-            
-            for i, item_id in enumerate(unique_items):
-                self.item_mapping[item_id] = i
-                # Store song metadata in reverse mapping
+            for item_id in unique_items:
                 track_data = df[df['item_id'] == item_id].iloc[0]
                 self.reverse_item_mapping[item_id] = {
                     'name': track_data.get('name', 'Unknown Track'),
                     'artists': track_data.get('artists', ['Unknown Artist'])
                 }
-            
-            # Convert to numeric IDs for Surprise
-            df['user_id'] = df['user_id'].map(self.user_mapping)
-            df['item_id'] = df['item_id'].map(self.item_mapping)
             
             logger.info(f"Prepared data: {len(df)} interactions, {len(unique_users)} users, {len(unique_items)} items")
             return df
@@ -188,38 +385,26 @@ class CollaborativeFilteringRecommender:
                 return False
             
             logger.info(f"Prepared data: {len(data)} interactions, {data['user_id'].nunique()} users, {data['item_id'].nunique()} items")
-            
-            # Create user and item mappings
-            unique_users = data['user_id'].unique()
-            unique_items = data['item_id'].unique()
-            
-            self.user_mapping = {user_id: idx for idx, user_id in enumerate(unique_users)}
-            self.item_mapping = {item_id: idx for idx, item_id in enumerate(unique_items)}
-            
-            # Create reverse mappings
-            self.reverse_user_mapping = {idx: user_id for user_id, idx in self.user_mapping.items()}
-            self.reverse_item_mapping = {item_id: idx for item_id, idx in self.item_mapping.items()}
-            
+
             # Try to get song metadata from the data if available
             if 'name' in data.columns and 'artists' in data.columns:
                 logger.info("Found song metadata in training data")
                 for _, row in data.iterrows():
                     item_id = row['item_id']
-                    if item_id in self.reverse_item_mapping:
-                        self.reverse_item_mapping[item_id] = {
-                            'name': row.get('name', 'Unknown Track'),
-                            'artists': row.get('artists', ['Unknown Artist']) if isinstance(row.get('artists'), list) else [row.get('artists', 'Unknown Artist')]
-                        }
+                    self.reverse_item_mapping[item_id] = {
+                        'name': row.get('name', 'Unknown Track'),
+                        'artists': row.get('artists', ['Unknown Artist']) if isinstance(row.get('artists'), list) else [row.get('artists', 'Unknown Artist')]
+                    }
             else:
                 logger.info("No song metadata found, creating basic item info")
-                # Create basic item info
-                for item_id in unique_items:
+                # Create basic item info for each RAW item id
+                for item_id in data['item_id'].unique():
                     self.reverse_item_mapping[item_id] = {
-                        'name': f'Track {self.item_mapping[item_id]}',
+                        'name': f'Track {item_id}',
                         'artists': ['Unknown Artist']
                     }
             
-            # Convert to Surprise format
+            # Convert to Surprise format (using RAW string ids)
             reader = Reader(rating_scale=(1, 5))
             self.trainset = Dataset.load_from_df(data[['user_id', 'item_id', 'rating']], reader).build_full_trainset()
             
@@ -245,6 +430,9 @@ class CollaborativeFilteringRecommender:
             logger.info(f"RMSE: {rmse_score:.4f}")
             logger.info(f"MAE: {mae_score:.4f}")
             
+            # Build stable ID mapper from trainset
+            self.id_mapper = IDMapper.from_trainset(self.trainset)
+
             # Save the trained model
             self.save_model()
             
@@ -271,30 +459,26 @@ class CollaborativeFilteringRecommender:
                 return []
             
             logger.info(f"Getting recommendations for user {user_id}")
-            logger.info(f"User mapping size: {len(self.user_mapping)}")
-            logger.info(f"Item mapping size: {len(self.item_mapping)}")
-            
-            # Convert user_id to internal user index
-            if user_id not in self.user_mapping:
-                # If user not in training data, add them with a default rating
-                logger.info(f"User {user_id} not in training data, adding them")
-                user_idx = len(self.user_mapping)
-                self.user_mapping[user_id] = user_idx
-                self.reverse_user_mapping[user_idx] = user_id
-            
-            user_idx = self.user_mapping[user_id]
-            logger.info(f"User internal index: {user_idx}")
-            
-            # Get predictions for all items for this user
+            if self.id_mapper:
+                logger.info(f"Known users: {len(self.id_mapper.user_to_inner)} | items: {len(self.id_mapper.item_to_inner)}")
+            else:
+                logger.warning("IDMapper missing; rebuilding from trainset if possible")
+                if self.trainset:
+                    self.id_mapper = IDMapper.from_trainset(self.trainset)
+                else:
+                    return []
+
+            # Predict for all known RAW items for this RAW user id
             predictions = []
-            logger.info(f"Starting predictions for {len(self.item_mapping)} items")
-            
-            for item_idx in range(len(self.item_mapping)):
+            all_item_raw_ids = list(self.id_mapper.item_to_inner.keys())
+            logger.info(f"Starting predictions for {len(all_item_raw_ids)} items")
+
+            for raw_iid in all_item_raw_ids:
                 try:
-                    pred = self.model.predict(user_idx, item_idx)
-                    predictions.append((item_idx, pred.est))
+                    pred = self.model.predict(user_id, raw_iid)
+                    predictions.append((raw_iid, pred.est))
                 except Exception as e:
-                    logger.debug(f"Failed to predict for user {user_idx}, item {item_idx}: {e}")
+                    logger.debug(f"Failed to predict for user {user_id}, item {raw_iid}: {e}")
                     continue
             
             logger.info(f"Generated {len(predictions)} predictions")
@@ -305,35 +489,19 @@ class CollaborativeFilteringRecommender:
             # Get top recommendations
             recommendations = []
             logger.info(f"Processing top {n_recommendations} predictions into recommendations")
-            logger.info(f"Reverse item mapping size: {len(self.reverse_item_mapping)}")
-            
-            for item_idx, score in predictions[:n_recommendations]:
+            logger.info(f"Item metadata size: {len(self.reverse_item_mapping)}")
+
+            for raw_iid, score in predictions[:n_recommendations]:
                 try:
-                    # Convert back to original item ID
-                    original_item_id = list(self.item_mapping.keys())[item_idx]
-                    logger.debug(f"Processing item {item_idx} -> {original_item_id}")
-                    
-                    # Get item details from the reverse mapping
-                    if original_item_id in self.reverse_item_mapping:
-                        item_info = self.reverse_item_mapping[original_item_id]
-                        recommendations.append({
-                            'track_id': original_item_id,
-                            'name': item_info.get('name', 'Unknown Track'),
-                            'artists': item_info.get('artists', ['Unknown Artist']),
-                            'score': round(score, 3)
-                        })
-                        logger.debug(f"Added recommendation: {item_info.get('name', 'Unknown Track')}")
-                    else:
-                        # If reverse mapping is missing, create a basic recommendation
-                        logger.warning(f"Item {original_item_id} not found in reverse mapping, creating basic info")
-                        recommendations.append({
-                            'track_id': original_item_id,
-                            'name': f'Track {item_idx}',
-                            'artists': ['Unknown Artist'],
-                            'score': round(score, 3)
-                        })
+                    item_info = self.reverse_item_mapping.get(raw_iid, {})
+                    recommendations.append({
+                        'track_id': raw_iid,
+                        'name': item_info.get('name', f'Track {raw_iid}'),
+                        'artists': item_info.get('artists', ['Unknown Artist']),
+                        'score': round(score, 3)
+                    })
                 except Exception as e:
-                    logger.error(f"Failed to process recommendation {item_idx}: {e}")
+                    logger.error(f"Failed to process recommendation for item {raw_iid}: {e}")
                     continue
             
             logger.info(f"Generated {len(recommendations)} recommendations for user {user_id}")
@@ -401,13 +569,10 @@ class CollaborativeFilteringRecommender:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"models/collaborative_filtering_{self.algorithm}_{timestamp}.joblib"
             
-            # Save model and mappings
+            # Save model and metadata
             model_data = {
                 'model': self.model,
                 'algorithm': self.algorithm,
-                'user_mapping': self.user_mapping,
-                'item_mapping': self.item_mapping,
-                'reverse_user_mapping': self.reverse_user_mapping,
                 'reverse_item_mapping': self.reverse_item_mapping,
                 'trainset': self.trainset,
                 'training_timestamp': datetime.now().isoformat()
@@ -415,6 +580,14 @@ class CollaborativeFilteringRecommender:
             
             joblib.dump(model_data, filename)
             logger.info(f"Model saved to {filename}")
+            # Persist ID mapper JSON alongside the joblib
+            try:
+                if self.id_mapper:
+                    idmap_path = filename.replace('.joblib', '_idmap.json')
+                    self.id_mapper.save(idmap_path)
+                    logger.info(f"ID mappings saved to {idmap_path}")
+            except Exception as e:
+                logger.warning(f"Failed to save ID mappings: {e}")
             return True
             
         except Exception as e:
@@ -441,28 +614,17 @@ class CollaborativeFilteringRecommender:
             
             self.model = model_data['model']
             self.algorithm = model_data['algorithm']
-            self.user_mapping = model_data['user_mapping']
-            self.item_mapping = model_data['item_mapping']
-            self.reverse_user_mapping = model_data['reverse_user_mapping']
-            self.reverse_item_mapping = model_data['reverse_item_mapping']
+            self.reverse_item_mapping = model_data.get('reverse_item_mapping', {})
             self.trainset = model_data['trainset']
             
-            # Ensure reverse mappings are complete
-            if not self.reverse_item_mapping and self.item_mapping:
-                logger.info("Rebuilding reverse item mapping...")
-                self.reverse_item_mapping = {}
-                for item_id, item_idx in self.item_mapping.items():
-                    # Create basic item info if not available
-                    self.reverse_item_mapping[item_id] = {
-                        'name': f'Track {item_idx}',
-                        'artists': ['Unknown Artist']
-                    }
-            
-            if not self.reverse_user_mapping and self.user_mapping:
-                logger.info("Rebuilding reverse user mapping...")
-                self.reverse_user_mapping = {}
-                for user_id, user_idx in self.user_mapping.items():
-                    self.reverse_user_mapping[user_idx] = user_id
+            # Load or rebuild IDMapper
+            idmap_path = filename.replace('.joblib', '_idmap.json')
+            if os.path.exists(idmap_path):
+                self.id_mapper = IDMapper.load(idmap_path)
+            else:
+                logger.info("ID map JSON not found; rebuilding from trainset")
+                if self.trainset:
+                    self.id_mapper = IDMapper.from_trainset(self.trainset)
             
             logger.info(f"Model loaded from {filename}")
             return True
@@ -483,8 +645,8 @@ class CollaborativeFilteringRecommender:
             return {
                 'algorithm': self.algorithm,
                 'is_trained': self.model is not None and self.trainset is not None,
-                'user_count': len(self.user_mapping),
-                'item_count': len(self.item_mapping),
+                'user_count': len(self.id_mapper.user_to_inner) if self.id_mapper else 0,
+                'item_count': len(self.id_mapper.item_to_inner) if self.id_mapper else 0,
                 'training_data_size': training_data_size
             }
         except Exception as e:
@@ -496,6 +658,26 @@ class CollaborativeFilteringRecommender:
                 'item_count': 0,
                 'training_data_size': 0
             }
+
+    def predict_scores_for_items(self, user_id: str, item_ids: List[str]) -> Dict[str, float]:
+        """
+        Predict scores for a given RAW user id and a list of RAW item ids.
+        Order of item_ids must not affect the scores for any specific id.
+        """
+        try:
+            if not self.model:
+                return {}
+            scores: Dict[str, float] = {}
+            for iid in item_ids:
+                try:
+                    pred = self.model.predict(user_id, iid)
+                    scores[iid] = float(pred.est)
+                except Exception as e:
+                    logger.debug(f"Predict failed for {iid}: {e}")
+            return scores
+        except Exception as e:
+            logger.error(f"predict_scores_for_items failed: {e}")
+            return {}
     
     def update_model(self, new_data: pd.DataFrame) -> bool:
         """

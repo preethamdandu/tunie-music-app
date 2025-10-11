@@ -12,13 +12,80 @@ import pandas as pd
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
+import time
+import random
+import requests
+from cachetools import TTLCache, cached
+from functools import lru_cache
+from cachetools.keys import hashkey
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 15-minute TTL cache for expensive Spotify reads
+cache = TTLCache(maxsize=100, ttl=900)
+
+def spotify_retry_handler(func):
+    """
+    Decorator that retries Spotify API calls with exponential backoff.
+
+    - Retries up to 3 times on:
+      * spotipy.exceptions.SpotifyException with 429 or 5xx http_status
+      * requests.exceptions.RequestException (network errors)
+    - Logs a clear warning before each retry
+    - Honors Retry-After header for 429 when available; otherwise uses backoff
+    """
+    def wrapper(*args, **kwargs):
+        max_retries = 3
+        base_delay = 1.0  # seconds
+        attempt = 0
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except spotipy.exceptions.SpotifyException as e:
+                status = getattr(e, 'http_status', None)
+                should_retry = status == 429 or (isinstance(status, int) and status >= 500)
+                if not should_retry or attempt >= max_retries:
+                    raise
+
+                attempt += 1
+
+                # Compute delay: Retry-After for 429, else exponential backoff with jitter
+                delay = None
+                if status == 429:
+                    # Try to read Retry-After header
+                    retry_after = None
+                    try:
+                        headers = getattr(e, 'headers', {}) or {}
+                        retry_after = headers.get('Retry-After') or headers.get('retry-after')
+                    except Exception:
+                        retry_after = None
+                    try:
+                        delay = float(retry_after)
+                    except Exception:
+                        delay = None
+
+                if delay is None:
+                    delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+
+                logger.warning(
+                    f"Spotify API call {func.__name__} failed with status {status}. "
+                    f"Retry attempt {attempt}/{max_retries} in {delay:.2f}s"
+                )
+                time.sleep(delay)
+                continue
+            except requests.exceptions.RequestException as e:
+                if attempt >= max_retries:
+                    raise
+                attempt += 1
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                logger.warning(
+                    f"Network error during Spotify call {func.__name__}: {e}. "
+                    f"Retry attempt {attempt}/{max_retries} in {delay:.2f}s"
+                )
+                time.sleep(delay)
+                continue
+    
+    return wrapper
 
 class SpotifyClient:
     """Spotify API client for music data retrieval and playlist management"""
@@ -98,8 +165,15 @@ class SpotifyClient:
             logger.error(f"Failed to get user profile: {e}")
             return {}
     
+    # cache key that isolates by client instance and parameters
+    def _cache_key_ignore_self(self, *args, **kwargs):
+        return hashkey(id(self), *args, **kwargs)
+
+    @cached(cache, key=_cache_key_ignore_self)
+    @spotify_retry_handler
     def get_user_top_tracks(self, limit: int = 50, time_range: str = 'medium_term') -> List[Dict]:
         """Get user's top tracks"""
+        
         try:
             # Spotify API limit is 50
             actual_limit = min(limit, 50)
@@ -127,6 +201,8 @@ class SpotifyClient:
             logger.error(f"Failed to get top tracks: {e}")
             return []
     
+    @cached(cache, key=_cache_key_ignore_self)
+    @spotify_retry_handler
     def get_user_top_artists(self, limit: int = 50, time_range: str = 'medium_term') -> List[Dict]:
         """Get user's top artists"""
         try:
@@ -154,6 +230,8 @@ class SpotifyClient:
             logger.error(f"Failed to get top artists: {e}")
             return []
     
+    @cached(cache, key=_cache_key_ignore_self)
+    @spotify_retry_handler
     def get_recently_played(self, limit: int = 50) -> List[Dict]:
         """Get user's recently played tracks"""
         try:
@@ -196,6 +274,62 @@ class SpotifyClient:
         except Exception as e:
             logger.error(f"Failed to get track features: {e}")
             return []
+
+    def get_audio_features_for_tracks(self, track_ids: List[str]) -> Dict[str, Dict]:
+        """
+        Public entrypoint that normalizes a list of track IDs and leverages a
+        memoized helper keyed by a stable tuple of IDs for single-session speedups.
+        """
+        try:
+            if not track_ids:
+                return {}
+            # Build a stable cache key: normalize, dedupe, sort
+            key = tuple(sorted({str(t).strip() for t in track_ids if isinstance(t, str) and str(t).strip()}))
+            return self._get_audio_features_for_tracks_cached(key)
+        except Exception as e:
+            logger.error(f"Failed to retrieve audio features for tracks: {e}")
+            return {}
+
+    # This in-memory LRU cache (per-process, per-session) complements our cross-session TTLCache.
+    # TTLCache reduces redundant API reads across calls with time-based expiry; LRU here accelerates
+    # repeated lookups of the same immutable-by-ID payload within a single app session.
+    @lru_cache(maxsize=128)
+    def _get_audio_features_for_tracks_cached(self, cleaned_ids_key: tuple) -> Dict[str, Dict]:
+        try:
+            cleaned_ids: List[str] = list(cleaned_ids_key)
+            features_by_id: Dict[str, Dict] = {}
+
+            for i in range(0, len(cleaned_ids), 100):
+                batch = cleaned_ids[i:i+100]
+                try:
+                    results = self.sp.audio_features(batch)
+                except Exception as e:
+                    logger.warning(f"audio_features request failed for batch starting with {batch[0] if batch else 'empty'}: {e}")
+                    continue
+
+                if not results:
+                    logger.warning("audio_features returned no data for a batch")
+                    for tid in batch:
+                        features_by_id.setdefault(tid, {})
+                    continue
+
+                for idx, feat in enumerate(results):
+                    tid = batch[idx] if idx < len(batch) else None
+                    if not tid:
+                        continue
+                    if feat is None:
+                        logger.debug(f"No audio features available for track id {tid}")
+                        features_by_id.setdefault(tid, {})
+                    else:
+                        features_by_id[tid] = feat
+
+            for tid in cleaned_ids:
+                features_by_id.setdefault(tid, {})
+
+            return features_by_id
+        except Exception as e:
+            logger.error(f"_get_audio_features_for_tracks_cached failed: {e}")
+            return {}
     
     def get_track_analysis(self, track_id: str) -> Dict:
         """Get detailed audio analysis for a single track"""
@@ -227,6 +361,75 @@ class SpotifyClient:
         except Exception as e:
             logger.error(f"Failed to search tracks: {e}")
             return []
+
+    def search_tracks_by_keywords(self, keywords: Dict[str, List[str]] | str, limit: int = 50) -> List[Dict]:
+        """
+        Search Spotify for tracks using parsed keywords. Supports artist, title/track, album, genre, and raw terms.
+        If a string is provided, it's treated as a raw query.
+        """
+        try:
+            # Normalize input
+            if isinstance(keywords, str):
+                queries = [keywords]
+            else:
+                queries = []
+                artists = keywords.get('artists', [])
+                titles = keywords.get('titles', [])
+                albums = keywords.get('albums', [])
+                genres = keywords.get('genres', [])
+                raw_terms = keywords.get('raw', [])
+
+                # Build specific operator queries to improve precision
+                for artist in artists:
+                    queries.append(f'artist:"{artist}"')
+                for title in titles:
+                    # Spotify supports both "track:" and "title:"; use track for better coverage
+                    queries.append(f'track:"{title}"')
+                for album in albums:
+                    queries.append(f'album:"{album}"')
+                for genre in genres:
+                    # genre operator is primarily for artist search but still helpful as a signal
+                    queries.append(f'genre:"{genre}"')
+                for term in raw_terms:
+                    queries.append(term)
+
+                # If mood/activity context is provided inside keywords, include as broaders
+                context_terms = keywords.get('context', [])
+                for term in context_terms:
+                    queries.append(term)
+
+            # Execute searches and merge results
+            seen: set[str] = set()
+            combined: List[Dict] = []
+            per_query_limit = max(5, min(50, limit))
+
+            for q in queries:
+                try:
+                    results = self.sp.search(q=q, type='track', limit=per_query_limit)
+                    for item in results.get('tracks', {}).get('items', []):
+                        track_id = item.get('id')
+                        if not track_id or track_id in seen:
+                            continue
+                        seen.add(track_id)
+                        combined.append({
+                            'id': track_id,
+                            'name': item.get('name'),
+                            'artists': [a.get('name') for a in item.get('artists', [])],
+                            'album': (item.get('album') or {}).get('name'),
+                            'popularity': item.get('popularity'),
+                            'uri': item.get('uri')
+                        })
+                        if len(combined) >= limit:
+                            break
+                except Exception as inner_e:
+                    logger.warning(f"Keyword search failed for query '{q}': {inner_e}")
+                if len(combined) >= limit:
+                    break
+
+            return combined[:limit]
+        except Exception as e:
+            logger.error(f"Failed keyword track search: {e}")
+            return []
     
     def create_playlist(self, name: str, description: str = "", public: bool = True) -> Optional[str]:
         """Create a new playlist for the current user"""
@@ -246,8 +449,35 @@ class SpotifyClient:
     def add_tracks_to_playlist(self, playlist_id: str, track_uris: List[str]) -> bool:
         """Add tracks to an existing playlist"""
         try:
-            self.sp.playlist_add_items(playlist_id, track_uris)
-            logger.info(f"Successfully added {len(track_uris)} tracks to playlist {playlist_id}")
+            if not track_uris:
+                logger.info(f"No tracks to add for playlist {playlist_id}")
+                return True
+
+            # Clean and deduplicate URIs
+            cleaned = []
+            seen = set()
+            for uri in track_uris:
+                if not isinstance(uri, str):
+                    continue
+                u = uri.strip()
+                if not u or u in seen:
+                    continue
+                seen.add(u)
+                cleaned.append(u)
+
+            # Spotify accepts up to 100 items per request
+            batch_size = 100
+            total = len(cleaned)
+            added = 0
+
+            for i in range(0, total, batch_size):
+                chunk = cleaned[i:i + batch_size]
+                # Perform the API call for this chunk
+                self.sp.playlist_add_items(playlist_id, chunk)
+                added += len(chunk)
+                logger.debug(f"Added chunk of {len(chunk)} tracks to {playlist_id} ({added}/{total})")
+
+            logger.info(f"Successfully added {added} tracks to playlist {playlist_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to add tracks to playlist: {e}")
@@ -568,3 +798,111 @@ class SpotifyClient:
         except Exception as e:
             logger.error(f"Failed to search tracks by artist and mood '{artist_name}' + '{mood}': {e}")
             return []
+
+    def search_for_artists(self, keywords: List[str], per_keyword_limit: int = 5) -> List[Dict]:
+        """
+        Search Spotify for artists using a list of keyword terms and return unique artist objects.
+
+        Args:
+            keywords: List of search terms (artist names, synonyms, niche terms)
+            per_keyword_limit: Max artists to fetch per keyword
+
+        Returns:
+            List of artist dicts with keys: id, name, genres, popularity, followers, uri
+        """
+        try:
+            if not keywords:
+                return []
+
+            seen_ids: set[str] = set()
+            artists: List[Dict] = []
+
+            for term in keywords:
+                if not term or not isinstance(term, str):
+                    continue
+                q = term.strip()
+                if not q:
+                    continue
+                try:
+                    results = self.sp.search(q=q, type='artist', limit=max(1, min(50, per_keyword_limit)))
+                except Exception as e:
+                    logger.debug(f"Artist search failed for term '{q}': {e}")
+                    continue
+
+                items = (results or {}).get('artists', {}).get('items', [])
+                for a in items:
+                    aid = a.get('id')
+                    if not aid or aid in seen_ids:
+                        continue
+                    seen_ids.add(aid)
+                    artists.append({
+                        'id': aid,
+                        'name': a.get('name', ''),
+                        'genres': a.get('genres', []) or [],
+                        'popularity': a.get('popularity', 0),
+                        'followers': (a.get('followers') or {}).get('total', 0),
+                        'uri': a.get('uri', '')
+                    })
+
+            return artists
+        except Exception as e:
+            logger.error(f"Failed to search for artists: {e}")
+            return []
+
+    def get_top_tracks_for_artists(self, artist_ids: List[str], market: str = 'US', limit: int = 10) -> Dict[str, List[Dict]]:
+        """
+        Public entrypoint that normalizes a list of artist IDs and delegates to a
+        memoized helper keyed by a stable tuple of IDs.
+        """
+        try:
+            if not artist_ids:
+                return {}
+            key = tuple(sorted({str(a).strip() for a in artist_ids if isinstance(a, str) and str(a).strip()}))
+            return self._get_top_tracks_for_artists_cached(key, market, int(limit))
+        except Exception as e:
+            logger.error(f"Failed to retrieve top tracks for artists: {e}")
+            return {}
+
+    @lru_cache(maxsize=128)
+    def _get_top_tracks_for_artists_cached(self, artist_ids_key: tuple, market: str, limit: int) -> Dict[str, List[Dict]]:
+        results: Dict[str, List[Dict]] = {}
+        try:
+            artist_ids: List[str] = list(artist_ids_key)
+            for aid in artist_ids:
+                if not isinstance(aid, str) or not aid.strip():
+                    results[aid] = [] if aid is not None else []
+                    continue
+                artist_id = aid.strip()
+                try:
+                    top = self.sp.artist_top_tracks(artist_id, country=market)
+                except TypeError:
+                    try:
+                        top = self.sp.artist_top_tracks(artist_id)
+                    except Exception as e:
+                        logger.debug(f"artist_top_tracks failed for {artist_id}: {e}")
+                        results[artist_id] = []
+                        continue
+                except Exception as e:
+                    logger.debug(f"artist_top_tracks failed for {artist_id}: {e}")
+                    results[artist_id] = []
+                    continue
+
+                tracks_out: List[Dict] = []
+                for t in (top or {}).get('tracks', [])[:max(1, min(10, limit))]:
+                    tracks_out.append({
+                        'id': t.get('id'),
+                        'name': t.get('name', ''),
+                        'artists': [ar.get('name') for ar in (t.get('artists') or [])],
+                        'album': (t.get('album') or {}).get('name', ''),
+                        'popularity': t.get('popularity', 0),
+                        'duration_ms': t.get('duration_ms', 0),
+                        'uri': t.get('uri', ''),
+                        'external_urls': (t.get('external_urls') or {})
+                    })
+
+                results[artist_id] = tracks_out
+
+            return results
+        except Exception as e:
+            logger.error(f"_get_top_tracks_for_artists_cached failed: {e}")
+            return results

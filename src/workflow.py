@@ -11,16 +11,50 @@ from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 from .spotify_client import SpotifyClient
 from .recommender import CollaborativeFilteringRecommender
 from .llm_agent import LLMAgent
+from .keyword_handler import KeywordHandler
+from .llm_driven_workflow import LLMDrivenWorkflow
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class ProgressiveRelaxation:
+    """Three-stage search planner for niche queries.
+
+    Attempt 1 (Strict): most specific terms, instrumentalness >= 0.8
+    Attempt 2 (Relaxed): all expanded terms, instrumentalness >= 0.6
+    Attempt 3 (Broad): adjacent genres, no instrumentalness requirement
+    """
+
+    def __init__(self, expanded_terms: List[str], require_instrumental: bool, target_min: int = 10):
+        self.expanded_terms = expanded_terms or []
+        self.require_instrumental = require_instrumental
+        self.target_min = max(1, target_min)
+
+    def most_specific_terms(self) -> List[str]:
+        # Heuristic: prefer first 3 canonical terms as "most specific"
+        return self.expanded_terms[:3] if self.expanded_terms else []
+
+    def adjacent_terms(self) -> List[str]:
+        # Basic adjacent genres for world/folk niches; can be extended per-domain
+        return list({*self.expanded_terms, 'central asian folk', 'world music'})
+
+    def attempts(self) -> List[Dict]:
+        attempts: List[Dict] = []
+        # Attempt 1: strict only if instrumental is requested
+        if self.require_instrumental:
+            attempts.append({'terms': self.most_specific_terms(), 'instr_threshold': 0.8})
+        else:
+            attempts.append({'terms': self.most_specific_terms(), 'instr_threshold': None})
+
+        # Attempt 2: relaxed terms, medium threshold if instrumental requested
+        attempts.append({'terms': self.expanded_terms, 'instr_threshold': 0.6 if self.require_instrumental else None})
+
+        # Attempt 3: broaden to adjacent, no instrumental requirement
+        attempts.append({'terms': self.adjacent_terms(), 'instr_threshold': None})
+        return attempts
 
 class MultiAgentWorkflow:
     """Multi-agent workflow orchestrator for automated playlist generation"""
@@ -102,6 +136,11 @@ class MultiAgentWorkflow:
             Dictionary with workflow results
         """
         try:
+            # Workflow Entry: log strategy and all received parameters
+            try:
+                logger.info("WorkflowEntry | type=%s | params=%s", workflow_type, json.dumps(kwargs, ensure_ascii=False))
+            except Exception:
+                pass
             workflow_start = datetime.now()
             
             if workflow_type == 'playlist_generation':
@@ -141,7 +180,11 @@ class MultiAgentWorkflow:
     
     def _execute_playlist_generation_workflow(self, mood: str, activity: str, 
                                             user_context: str = "", num_tracks: int = 20, 
-                                            language_preference: str = "Any Language") -> Dict:
+                                            language_preference: str = "Any Language",
+                                            keywords: Optional[Dict] | str = None,
+                                            must_be_instrumental: bool = False,
+                                            search_strictness: int = 1,
+                                            strategy: str = 'cf_first') -> Dict:
         """
         Execute playlist generation workflow
         
@@ -151,14 +194,54 @@ class MultiAgentWorkflow:
             user_context: Additional context
             num_tracks: Number of tracks to recommend
             language_preference: Preferred language for songs
+            strategy: Recommendation strategy ('cf_first' | 'llm_driven')
             
         Returns:
             Dictionary with playlist generation results
         """
         try:
             logger.info(f"Starting playlist generation workflow for mood: {mood}, activity: {activity}, tracks: {num_tracks}")
+
+            # Strategy routing: if llm_driven, delegate to LLMDrivenWorkflow
+            if isinstance(strategy, str) and strategy.lower() == 'llm_driven':
+                try:
+                    llm_flow = LLMDrivenWorkflow()
+                    llm_result = llm_flow.execute_playlist_generation(
+                        mood=mood,
+                        activity=activity,
+                        user_context=user_context,
+                        num_tracks=num_tracks,
+                        language_preference=language_preference,
+                        keywords=keywords,
+                        must_be_instrumental=must_be_instrumental,
+                        search_strictness=search_strictness
+                    )
+                    # Add warnings passthrough if provided
+                    if 'warnings' not in llm_result:
+                        llm_result['warnings'] = []
+                    return llm_result
+                except Exception as e:
+                    logger.warning(f"LLM-driven strategy failed, falling back to CF-first: {e}")
+                    # Continue with CF-first, attach a warning later
+
+            # Niche query strategy routing
+            if isinstance(strategy, str) and strategy.lower() == 'niche_query':
+                niche_result = self.find_playlist_for_niche_query(
+                    query=str(keywords or user_context or mood or activity),
+                    mood=mood,
+                    activity=activity,
+                    user_context=user_context,
+                    num_tracks=num_tracks,
+                    language_preference=language_preference,
+                    must_be_instrumental=must_be_instrumental,
+                    search_strictness=search_strictness
+                )
+                if 'warnings' not in niche_result:
+                    niche_result['warnings'] = []
+                return niche_result
             
             # Step 1: Retrieve Agent - Get user data
+            warnings: List[str] = []
             user_data = self._retrieve_user_data()
             if not user_data:
                 return {'error': 'Failed to retrieve user data. Please ensure you are connected to Spotify.'}
@@ -166,6 +249,23 @@ class MultiAgentWorkflow:
             # Step 2: Filtering Agent - Get collaborative filtering recommendations
             collaborative_recs = self._get_collaborative_recommendations(user_data, num_tracks)
             
+            # Step 2a: If user supplied keywords, search Spotify and prioritize matches
+            parsed_keywords = None
+            keyword_tracks: List[Dict] = []
+            if keywords and self.spotify_client:
+                try:
+                    parsed_keywords = self._parse_keywords(keywords)
+                    if parsed_keywords:
+                        logger.info(f"Applying keyword search with parsed keys: {list(parsed_keywords.keys())}")
+                        keyword_tracks = self.spotify_client.search_tracks_by_keywords(parsed_keywords, limit=max(num_tracks * 3, 50))
+                        if keyword_tracks:
+                            collaborative_recs = self._merge_and_prioritize_by_keywords(
+                                collaborative_recs, keyword_tracks, parsed_keywords, num_tracks
+                            )
+                            logger.info(f"Keyword-prioritized recommendations count: {len(collaborative_recs)}")
+                except Exception as e:
+                    logger.warning(f"Keyword search failed, continuing without keyword prioritization: {e}")
+
             # Apply language filtering if specified
             if language_preference != "Any Language":
                 logger.info(f"Applying language filter for: {language_preference}")
@@ -173,14 +273,46 @@ class MultiAgentWorkflow:
                 # For English, we want to ensure we get English-language tracks
                 if language_preference == "English":
                     logger.info("Ensuring English-language tracks are prioritized")
-                    # Search for English tracks first to ensure we have enough
-                    english_tracks = self._search_tracks_by_language(language_preference, mood, activity, num_tracks)
-                    if english_tracks:
-                        collaborative_recs = english_tracks[:num_tracks]
-                        logger.info(f"Found {len(collaborative_recs)} English tracks for {mood} {activity}")
-                    else:
-                        # Fallback to collaborative recommendations but prioritize English
-                        collaborative_recs = self._filter_tracks_by_language(collaborative_recs, language_preference, user_data)
+                    # 1) Try keyword-targeted artist results first (preserve user intent)
+                    targeted_added = 0
+                    try:
+                        if parsed_keywords and self.spotify_client:
+                            artist_terms = parsed_keywords.get('artists', []) or []
+                            if artist_terms:
+                                needed = max(0, num_tracks - len(collaborative_recs))
+                                for artist_name in artist_terms:
+                                    if targeted_added >= needed:
+                                        break
+                                    q = {'artists': [artist_name], 'context': ['english']}
+                                    tks = self.spotify_client.search_tracks_by_keywords(q, limit=max(50, needed * 3))
+                                    for tk in tks:
+                                        if targeted_added >= needed:
+                                            break
+                                        tid = tk.get('id')
+                                        if tid and not any(t.get('track_id') == tid for t in collaborative_recs):
+                                            collaborative_recs.append({
+                                                'track_id': tid,
+                                                'name': tk.get('name', 'Unknown Track'),
+                                                'artists': tk.get('artists', []),
+                                                'score': 0.95,
+                                                'source': 'keyword_language_bias',
+                                                'album': tk.get('album', 'Unknown Album'),
+                                                'popularity': tk.get('popularity', 50)
+                                            })
+                                            targeted_added += 1
+                    except Exception as e:
+                        logger.warning(f"Keyword-targeted language search failed (English): {e}")
+
+                    # 2) If still not enough, search broadly for English tracks
+                    if len(collaborative_recs) < num_tracks:
+                        english_tracks = self._search_tracks_by_language(language_preference, mood, activity, num_tracks - len(collaborative_recs))
+                        if english_tracks:
+                            collaborative_recs.extend(english_tracks)
+                            collaborative_recs = collaborative_recs[:num_tracks]
+                            logger.info(f"Found {len(english_tracks)} English tracks for {mood} {activity}")
+                        else:
+                            # Fallback to collaborative recommendations but prioritize English
+                            collaborative_recs = self._filter_tracks_by_language(collaborative_recs, language_preference, user_data)
                 else:
                     # For other languages, use the existing filtering logic
                     collaborative_recs = self._filter_tracks_by_language(collaborative_recs, language_preference, user_data)
@@ -188,10 +320,42 @@ class MultiAgentWorkflow:
                 # If we still don't have enough tracks after language filtering, try to get more
                 if len(collaborative_recs) < num_tracks:
                     logger.info(f"Only {len(collaborative_recs)} tracks found after language filtering, searching for more {language_preference} tracks")
-                    additional_tracks = self._search_tracks_by_language(language_preference, mood, activity, num_tracks - len(collaborative_recs))
-                    if additional_tracks:
-                        collaborative_recs.extend(additional_tracks)
-                        logger.info(f"Added {len(additional_tracks)} additional {language_preference} tracks")
+                    # 1) Try keyword-targeted artist results first (preserve user intent)
+                    targeted_added = 0
+                    try:
+                        if parsed_keywords and self.spotify_client:
+                            artist_terms = parsed_keywords.get('artists', []) or []
+                            if artist_terms:
+                                needed = max(0, num_tracks - len(collaborative_recs))
+                                for artist_name in artist_terms:
+                                    if targeted_added >= needed:
+                                        break
+                                    q = {'artists': [artist_name], 'context': [language_preference.lower()]}
+                                    tks = self.spotify_client.search_tracks_by_keywords(q, limit=max(50, needed * 3))
+                                    for tk in tks:
+                                        if targeted_added >= needed:
+                                            break
+                                        tid = tk.get('id')
+                                        if tid and not any(t.get('track_id') == tid for t in collaborative_recs):
+                                            collaborative_recs.append({
+                                                'track_id': tid,
+                                                'name': tk.get('name', 'Unknown Track'),
+                                                'artists': tk.get('artists', []),
+                                                'score': 0.95,
+                                                'source': 'keyword_language_bias',
+                                                'album': tk.get('album', 'Unknown Album'),
+                                                'popularity': tk.get('popularity', 50)
+                                            })
+                                            targeted_added += 1
+                    except Exception as e:
+                        logger.warning(f"Keyword-targeted language search failed ({language_preference}): {e}")
+
+                    # 2) If still not enough, search broadly for language tracks
+                    if len(collaborative_recs) < num_tracks:
+                        additional_tracks = self._search_tracks_by_language(language_preference, mood, activity, num_tracks - len(collaborative_recs))
+                        if additional_tracks:
+                            collaborative_recs.extend(additional_tracks)
+                            logger.info(f"Added {len(additional_tracks)} additional {language_preference} tracks")
             
             if not collaborative_recs:
                 # Try to get some real tracks from user data as fallback
@@ -271,50 +435,111 @@ class MultiAgentWorkflow:
                     collaborative_recs = user_tracks[:num_tracks]
                     logger.info(f"Using {len(collaborative_recs)} tracks from user's actual listening history")
                 else:
-                    # Final fallback - try to get any real tracks from Spotify search
-                    logger.info("No user tracks available - attempting Spotify search for fallback tracks")
+                    # Final fallback - cold-start strategy using mood-aligned popular tracks
+                    logger.info("No user tracks available - attempting cold-start mood-aligned popular tracks")
                     try:
-                        if self.spotify_client:
-                            # Search for popular tracks in the requested mood/genre
-                            search_query = f"{mood} {activity} music"
-                            search_results = self.spotify_client.search_tracks(search_query, limit=min(num_tracks, 50))
-                            
-                            if search_results:
-                                collaborative_recs = []
-                                for track in search_results[:num_tracks]:
-                                    collaborative_recs.append({
-                                        'track_id': track.get('id'),
-                                        'name': track.get('name', 'Unknown Track'),
-                                        'artists': track.get('artists', ['Unknown Artist']),
-                                        'score': 0.8
-                                    })
-                                logger.info(f"Found {len(collaborative_recs)} tracks via Spotify search")
-                            else:
-                                logger.warning("Spotify search failed - using minimal fallback")
-                                collaborative_recs = []
+                        if self.spotify_client and self.recommender:
+                            cold_recs = self.recommender.cold_start_recommendations(
+                                self.spotify_client,
+                                mood=mood,
+                                activity=activity,
+                                n_recommendations=num_tracks,
+                                language_preference=language_preference
+                            )
                         else:
-                            collaborative_recs = []
+                            cold_recs = []
                     except Exception as e:
-                        logger.warning(f"Spotify search fallback failed: {e}")
-                        collaborative_recs = []
+                        logger.warning(f"Cold-start fallback failed: {e}")
+                        cold_recs = []
+
+                    if cold_recs:
+                        collaborative_recs = cold_recs
+                        logger.info(f"Cold-start provided {len(collaborative_recs)} tracks")
+                    else:
+                        # Last resort: generic Spotify search
+                        logger.info("Cold-start unavailable - attempting generic Spotify search fallback")
+                        try:
+                            if self.spotify_client:
+                                search_query = f"{mood} {activity} music"
+                                search_results = self.spotify_client.search_tracks(search_query, limit=min(num_tracks, 50))
+                                if search_results:
+                                    collaborative_recs = []
+                                    for track in search_results[:num_tracks]:
+                                        collaborative_recs.append({
+                                            'track_id': track.get('id'),
+                                            'name': track.get('name', 'Unknown Track'),
+                                            'artists': track.get('artists', ['Unknown Artist']),
+                                            'score': 0.8
+                                        })
+                                    logger.info(f"Found {len(collaborative_recs)} tracks via generic search")
+                                else:
+                                    logger.warning("Generic Spotify search returned no results")
+                                    collaborative_recs = []
+                            else:
+                                collaborative_recs = []
+                        except Exception as e:
+                            logger.warning(f"Generic Spotify search fallback failed: {e}")
+                            collaborative_recs = []
                     
                     # If still no tracks, create a minimal valid response
                     if not collaborative_recs:
                         logger.info("Creating minimal valid response")
                         collaborative_recs = []
             
+            # Optional: apply instrumental constraint early if requested via Advanced Settings
+            if must_be_instrumental and collaborative_recs:
+                try:
+                    ids = [t.get('track_id') for t in collaborative_recs if t.get('track_id')]
+                    feats_map = self.spotify_client.get_audio_features_for_tracks(ids)
+                    collaborative_recs = [
+                        t for t in collaborative_recs
+                        if feats_map.get(t.get('track_id'), {}).get('instrumentalness', 0.0) >= (
+                            0.8 if search_strictness >= 2 else 0.6 if search_strictness == 1 else 0.0
+                        )
+                    ] or collaborative_recs
+                except Exception:
+                    pass
+
             # Step 3: Enhancement Agent - Enhance with LLM
             enhanced_recs = self._enhance_recommendations_with_llm(
                 user_data, mood, activity, user_context, collaborative_recs
             )
+            if isinstance(enhanced_recs, dict) and enhanced_recs.get('error'):
+                warnings.append('AI model unavailable, using fallback.')
             
             # Step 4: Generation Agent - Create final playlist
             final_playlist = self._create_final_playlist(
                 collaborative_recs, user_data, mood, activity, num_tracks, user_context, language_preference
             )
             
+            # Step 6: Validate playlist against keywords if provided
+            # Always compute keyword_validation for consistent UI visibility
+            keyword_validation = {}
+            try:
+                parsed_for_validation = parsed_keywords
+                if keywords and parsed_for_validation is None:
+                    parsed_for_validation = self._parse_keywords(keywords)
+                if parsed_for_validation:
+                    keyword_validation = self._validate_against_keywords(parsed_for_validation, final_playlist.get('tracks', []))
+                else:
+                    keyword_validation = {
+                        'matched_keywords': [],
+                        'unmet_keywords': [],
+                        'coverage': 0.0
+                    }
+            except Exception as e:
+                logger.warning(f"Keyword validation failed: {e}")
+                keyword_validation = { 'error': str(e) }
+
             # Step 5: Create Spotify playlist
             spotify_playlist = self._create_spotify_playlist(final_playlist)
+            try:
+                requested = len(final_playlist.get('tracks', []))
+                added = int(spotify_playlist.get('tracks_added', 0)) if isinstance(spotify_playlist, dict) else 0
+                if added < requested:
+                    warnings.append('Some tracks could not be added.')
+            except Exception:
+                pass
             
             workflow_result = {
                 'workflow_type': 'playlist_generation',
@@ -325,6 +550,7 @@ class MultiAgentWorkflow:
                 'enhanced_recommendations': enhanced_recs,
                 'final_playlist': final_playlist,
                 'spotify_playlist': spotify_playlist,
+                'keyword_validation': keyword_validation,
                 'metadata': {
                     'total_tracks': len(final_playlist.get('tracks', [])),
                     'generation_timestamp': datetime.now().isoformat(),
@@ -333,7 +559,8 @@ class MultiAgentWorkflow:
                     'note': 'Demo mode - using sample data for demonstration',
                     'collaborative_tracks_count': len(collaborative_recs),
                     'final_tracks_count': len(final_playlist.get('tracks', []))
-                }
+                },
+                'warnings': warnings
             }
             
             logger.info("Playlist generation workflow completed successfully")
@@ -342,6 +569,152 @@ class MultiAgentWorkflow:
         except Exception as e:
             logger.error(f"Playlist generation workflow failed: {e}")
             return {'error': str(e)}
+
+    def _parse_keywords(self, keywords: Optional[Dict] | str) -> Optional[Dict[str, List[str]]]:
+        """Parse a free-text or dict of keywords into a normalized structure.
+        Supported keys: artists, titles, albums, genres, raw, context.
+        Free-text parsing supports prefixes: artist:, title:, track:, album:, genre:
+        Everything else is treated as raw terms.
+        """
+        if not keywords:
+            return None
+        if isinstance(keywords, dict):
+            normalized = { k: [str(x).strip() for x in (v or []) if str(x).strip()] for k, v in keywords.items() }
+            # Ensure expected keys exist
+            for k in ['artists','titles','albums','genres','raw','context']:
+                normalized.setdefault(k, [])
+            return normalized
+        # String parsing
+        text = str(keywords).strip()
+        if not text:
+            return None
+        parts = [p.strip() for p in text.split(',') if p.strip()]
+        out: Dict[str, List[str]] = {'artists': [], 'titles': [], 'albums': [], 'genres': [], 'raw': [], 'context': []}
+        for part in parts:
+            lower = part.lower()
+            if lower.startswith('artist:'):
+                out['artists'].append(part.split(':', 1)[1].strip())
+            elif lower.startswith('title:') or lower.startswith('track:'):
+                out['titles'].append(part.split(':', 1)[1].strip())
+            elif lower.startswith('album:'):
+                out['albums'].append(part.split(':', 1)[1].strip())
+            elif lower.startswith('genre:'):
+                out['genres'].append(part.split(':', 1)[1].strip())
+            else:
+                out['raw'].append(part)
+        return out
+
+    def _merge_and_prioritize_by_keywords(self, 
+            collaborative_recs: List[Dict], keyword_tracks: List[Dict], parsed_keywords: Dict[str, List[str]], num_tracks: int
+        ) -> List[Dict]:
+        """Merge collaborative recs and keyword search results, prioritizing keyword matches.
+        We score each track by presence of keyword matches in artist/title/album/raw.
+        """
+        try:
+            def score_track(t: Dict) -> float:
+                name = (t.get('name') or '').lower()
+                album = (t.get('album') or '').lower()
+                artists = [a.lower() for a in (t.get('artists') or [])]
+                score = 0.0
+                # Weighted matches
+                for kw in parsed_keywords.get('artists', []):
+                    if any(kw.lower() in a for a in artists):
+                        score += 3.0
+                for kw in parsed_keywords.get('titles', []):
+                    if kw.lower() in name:
+                        score += 2.0
+                for kw in parsed_keywords.get('albums', []):
+                    if kw.lower() in album:
+                        score += 1.5
+                for kw in parsed_keywords.get('genres', []):
+                    # Track objects don't include genre reliably; treat as weak signal via name/album
+                    if kw.lower() in name or kw.lower() in album:
+                        score += 0.75
+                for kw in parsed_keywords.get('raw', []):
+                    if kw.lower() in name or kw.lower() in album or any(kw.lower() in a for a in artists):
+                        score += 1.0
+                # Popularity tie-breaker if available
+                popularity = t.get('popularity') or 0
+                return score + (popularity / 200.0)
+
+            # Deduplicate by track_id or id
+            def key_id(t: Dict) -> Optional[str]:
+                return t.get('track_id') or t.get('id')
+
+            pool: Dict[str, Dict] = {}
+            for t in collaborative_recs + keyword_tracks:
+                tid = key_id(t)
+                if not tid:
+                    continue
+                # Normalize to a single format
+                if 'track_id' not in t and 'id' in t:
+                    t = {
+                        'track_id': t.get('id'),
+                        'name': t.get('name', 'Unknown Track'),
+                        'artists': t.get('artists', ['Unknown Artist']),
+                        'score': t.get('score', 0.0),
+                        'album': t.get('album', 'Unknown Album'),
+                        'popularity': t.get('popularity', 0)
+                    }
+                pool[tid] = t
+
+            scored = sorted(pool.values(), key=score_track, reverse=True)
+            return scored[:max(num_tracks, len(scored))]
+        except Exception as e:
+            logger.warning(f"Failed to prioritize by keywords: {e}")
+            return collaborative_recs or keyword_tracks
+
+    def _validate_against_keywords(self, parsed_keywords: Optional[Dict[str, List[str]]], tracks: List[Dict]) -> Dict:
+        """Validate the final tracks against the provided keywords using the LLM agent if available,
+        with a deterministic heuristic fallback. Returns a compact, structured report.
+        """
+        if not parsed_keywords:
+            return {'enabled': False}
+        try:
+            if self.llm_agent and hasattr(self.llm_agent, 'validate_playlist_against_keywords'):
+                return self.llm_agent.validate_playlist_against_keywords(parsed_keywords, tracks)
+        except Exception as e:
+            logger.warning(f"LLM keyword validation failed, using fallback: {e}")
+
+        # Heuristic fallback
+        total_terms = sum(len(parsed_keywords.get(k, [])) for k in ['artists','titles','albums','genres','raw'])
+        matched_terms = 0
+        per_term = {}
+        examples = []
+        def fields(track):
+            name = (track.get('name') or '').lower()
+            album = (track.get('album') or '').lower()
+            artists = [a.lower() for a in (track.get('artists') or [])]
+            return name, album, artists
+        for key in ['artists','titles','albums','genres','raw']:
+            for kw in parsed_keywords.get(key, []):
+                kwl = kw.lower()
+                count = 0
+                for tr in tracks:
+                    name, album, artists = fields(tr)
+                    if key == 'artists' and any(kwl in a for a in artists):
+                        count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                    if key == 'titles' and kwl in name:
+                        count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                    if key == 'albums' and kwl in album:
+                        count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                    if key == 'genres' and (kwl in name or kwl in album or any(kwl in a for a in artists)):
+                        count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                    if key == 'raw' and (kwl in name or kwl in album or any(kwl in a for a in artists)):
+                        count += 1; examples.append({'keyword': kw, 'track': tr.get('name'), 'artists': tr.get('artists')}); break
+                per_term[kw] = count
+                if count > 0:
+                    matched_terms += 1
+        coverage = (matched_terms / total_terms) if total_terms else 1.0
+        unmet = [kw for kw, c in per_term.items() if c == 0]
+        return {
+            'enabled': True,
+            'coverage_score': round(coverage, 3),
+            'matched_terms': matched_terms,
+            'total_terms': total_terms,
+            'unmet_keywords': unmet,
+            'examples': examples[:10]
+        }
     
     def _execute_user_analysis_workflow(self, export_data: bool = True) -> Dict:
         """
@@ -1107,6 +1480,174 @@ class MultiAgentWorkflow:
                 'llm_agent': {'model_name': 'N/A', 'status': 'Error'},
                 'workflow_history': {'total_executions': 0, 'recent_executions': []}
             }
+
+    def find_playlist_for_niche_query(self, query: str,
+                                     mood: str = "",
+                                     activity: str = "",
+                                     user_context: str = "",
+                                     num_tracks: int = 20,
+                                     language_preference: str = "Any Language",
+                                     must_be_instrumental: bool = False,
+                                     search_strictness: int = 1) -> Dict:
+        """
+        High-level skeleton for niche query handling using hierarchical search.
+
+        Calling sequence (skeleton only):
+        1) Expand the query into canonical terms via KeywordHandler
+        2) Search for relevant artists using expanded terms
+        3) Fetch top tracks for those artists
+        4) Fetch audio features for all candidate tracks
+        5) Apply a simple filter (e.g., instrumentalness > 0.6 when indicated)
+        6) Package filtered tracks into a playlist-like dict and return
+
+        Note: This is intentionally a skeleton; detailed scoring/ordering and
+        edge-case handling will be implemented next.
+        """
+        try:
+            handler = KeywordHandler()
+            expanded = handler.expand(query)
+            terms = expanded.get('terms', [])
+            require_instrumental = bool(expanded.get('instrumental', False))
+
+            if not self.spotify_client:
+                return {'error': 'Spotify client unavailable', 'query': query}
+
+            # Progressive relaxation loop (up to 3 attempts)
+            planner = ProgressiveRelaxation(terms, require_instrumental, target_min=max(1, num_tracks))
+            collected: Dict[str, Dict] = {}
+
+            attempts = planner.attempts()
+            # Use UI-provided strictness to pick starting point:
+            # 2=strict (index 0), 1=relaxed (index 1), 0=broad (index 2)
+            start_idx = 0 if search_strictness >= 2 else (1 if search_strictness == 1 else 2)
+            ordered = attempts[start_idx:] + attempts[:start_idx]
+            for attempt in ordered:
+                attempt_terms = attempt.get('terms', [])
+                instr_threshold = attempt.get('instr_threshold', None)
+
+                # Artist search
+                try:
+                    logger.info("NicheArtistSearch | query_terms=%s", json.dumps(attempt_terms, ensure_ascii=False))
+                except Exception:
+                    pass
+                artists = self.spotify_client.search_for_artists(attempt_terms, per_keyword_limit=5)
+                try:
+                    logger.info("NicheArtistSearchResponse | raw=%s", json.dumps({'artists': artists}, ensure_ascii=False))
+                    logger.info("NicheArtistSearchSummary | count=%d", len(artists or []))
+                except Exception:
+                    pass
+                artist_ids = [a.get('id') for a in (artists or []) if a.get('id')]
+                if not artist_ids:
+                    # If no artists, continue to next relaxation level
+                    logger.info("NichePath | No artists found, moving to next relaxation level")
+                    continue
+                else:
+                    logger.info("NichePath | Proceeding with %d found artists", len(artist_ids))
+
+                # Top tracks by artist
+                artist_to_tracks = self.spotify_client.get_top_tracks_for_artists(artist_ids, market='US', limit=10)
+
+                # Flatten and dedupe
+                candidates: List[Dict] = []
+                for _, tracks in (artist_to_tracks or {}).items():
+                    for t in tracks or []:
+                        tid = t.get('id')
+                        if tid and tid not in collected:
+                            candidates.append(t)
+
+                if not candidates:
+                    continue
+
+                # Feature filtering
+                if instr_threshold is not None:
+                    ids = [t.get('id') for t in candidates if t.get('id')]
+                    feats_map = self.spotify_client.get_audio_features_for_tracks(ids)
+                    for t in candidates:
+                        tid = t.get('id')
+                        feats = feats_map.get(tid, {})
+                        if feats.get('instrumentalness', 0.0) >= instr_threshold:
+                            collected[tid] = t
+                else:
+                    for t in candidates:
+                        tid = t.get('id')
+                        if tid:
+                            collected[tid] = t
+
+                if len(collected) >= planner.target_min:
+                    break
+
+            # Niche scoring: heavily boost tracks whose artist name appears in the original query
+            query_norm = (query or '').lower().strip()
+            boost_artists = set()
+            try:
+                # Use expanded terms and the raw query tokens as potential artist indicators
+                for a in terms:
+                    if isinstance(a, str) and a.strip():
+                        boost_artists.add(a.lower().strip())
+                if query_norm:
+                    boost_artists.add(query_norm)
+            except Exception:
+                pass
+
+            # Compute scores with strong keyword-artist match boost
+            scored: List[Dict] = []
+            for t in list(collected.values()):
+                base = float(t.get('popularity', 50)) / 100.0
+                artists_lower = [str(a).lower() for a in (t.get('artists') or [])]
+                # Massive boost if any artist name is included in user query terms
+                has_primary = any(any(artist in hint or hint in artist for hint in boost_artists) for artist in artists_lower)
+                boost = 1.0 if has_primary else 0.0
+                score = base + boost
+                scored.append((score, t))
+
+            # Order by score descending, then by popularity as tiebreaker
+            scored.sort(key=lambda x: (x[0], x[1].get('popularity', 0)), reverse=True)
+            top_tracks = [t for _, t in scored[:num_tracks]]
+
+            # Format tracks for standard final_playlist envelope
+            formatted_tracks = []
+            for t in top_tracks:
+                formatted_tracks.append({
+                    'track_id': t.get('id'),
+                    'name': t.get('name', 'Unknown Track'),
+                    'artists': t.get('artists', ['Unknown Artist']),
+                    'score': float(t.get('popularity', 50)) / 100.0
+                })
+
+            playlist_name = f"Niche {mood} {activity} Playlist".strip()
+            description = f"Niche query: {query}"
+            final_playlist = {
+                'playlist_name': playlist_name if playlist_name.strip() else 'Niche Playlist',
+                'description': description,
+                'selected_tracks': formatted_tracks,
+                'tracks': formatted_tracks
+            }
+
+            # Create on Spotify
+            spotify_playlist = self._create_spotify_playlist(final_playlist)
+
+            result_obj = {
+                'workflow_type': 'niche_query',
+                'mood': mood,
+                'activity': activity,
+                'user_context': user_context,
+                'final_playlist': final_playlist,
+                'spotify_playlist': spotify_playlist,
+                'metadata': {
+                    'expanded_terms': terms,
+                    'instrumental_required': require_instrumental,
+                    'result_count': len(formatted_tracks)
+                },
+                'warnings': []
+            }
+            try:
+                logger.info("NicheFinalOutput | result=%s", json.dumps(result_obj, ensure_ascii=False))
+            except Exception:
+                pass
+            return result_obj
+        except Exception as e:
+            logger.error(f"find_playlist_for_niche_query failed: {e}")
+            return {'error': str(e), 'query': query}
 
     def _filter_tracks_by_language(self, tracks: List[Dict], language: str, user_data: Dict) -> List[Dict]:
         """Filter tracks by language preference"""
