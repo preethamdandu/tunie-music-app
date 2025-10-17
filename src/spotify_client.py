@@ -195,7 +195,25 @@ class SpotifyClient:
                     'uri': track['uri']
                 }
                 tracks.append(track_info)
-            
+            # Enrich with audio features so downstream heuristic profiler has sufficient data
+            try:
+                track_ids = [t['id'] for t in tracks if t.get('id')]
+                features_by_id = self.get_audio_features_for_tracks(track_ids)
+                for t in tracks:
+                    fid = t.get('id')
+                    feats = features_by_id.get(fid, {}) if fid else {}
+                    # Attach a compact subset commonly used by heuristics and filters
+                    t['audio_features'] = {
+                        'energy': feats.get('energy'),
+                        'valence': feats.get('valence'),
+                        'acousticness': feats.get('acousticness'),
+                        'danceability': feats.get('danceability'),
+                        'instrumentalness': feats.get('instrumentalness'),
+                        'tempo': feats.get('tempo')
+                    }
+            except Exception as enrich_e:
+                logger.warning(f"Failed to enrich top tracks with audio features: {enrich_e}")
+
             return tracks
         except Exception as e:
             logger.error(f"Failed to get top tracks: {e}")
@@ -224,7 +242,26 @@ class SpotifyClient:
                     'uri': artist['uri']
                 }
                 artists.append(artist_info)
-            
+            # Ensure full artist objects with genres by refetching details in batch if needed
+            try:
+                missing_or_empty = any(not a.get('genres') for a in artists)
+                if artists and missing_or_empty:
+                    ids = [a['id'] for a in artists if a.get('id')]
+                    for i in range(0, len(ids), 50):
+                        batch = ids[i:i+50]
+                        try:
+                            full = self.sp.artists(batch) or {}
+                        except Exception as inner:
+                            logger.debug(f"Batch artists() lookup failed: {inner}")
+                            continue
+                        by_id = {a.get('id'): a for a in full.get('artists', [])}
+                        for a in artists:
+                            fa = by_id.get(a.get('id')) if a.get('id') else None
+                            if fa and (not a.get('genres')):
+                                a['genres'] = fa.get('genres', []) or []
+            except Exception as enrich_e:
+                logger.debug(f"Failed to enrich top artists with full objects: {enrich_e}")
+
             return artists
         except Exception as e:
             logger.error(f"Failed to get top artists: {e}")

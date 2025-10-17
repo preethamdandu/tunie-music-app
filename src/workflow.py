@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from .spotify_client import SpotifyClient
 from .recommender import CollaborativeFilteringRecommender
 from .llm_agent import LLMAgent
+from .user_profiler import generate_taste_profile
 from .keyword_handler import KeywordHandler
 from .llm_driven_workflow import LLMDrivenWorkflow
 
@@ -111,6 +112,57 @@ class MultiAgentWorkflow:
             logger.error(f"Failed to initialize agents: {e}")
             # Don't raise here, let the workflow handle it gracefully
     
+    # ------------------------------
+    # Taste profile caching helpers
+    # ------------------------------
+    def _taste_profile_cache_path(self) -> str:
+        return os.path.join('data', 'taste_profiles.json')
+
+    def _load_taste_profile_cache(self) -> Dict:
+        try:
+            path = self._taste_profile_cache_path()
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f) or {}
+        except Exception as e:
+            logger.warning(f"Failed to load taste profile cache: {e}")
+        return {}
+
+    def _save_taste_profile_cache(self, cache: Dict) -> None:
+        try:
+            os.makedirs('data', exist_ok=True)
+            path = self._taste_profile_cache_path()
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(cache, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to save taste profile cache: {e}")
+
+    def _get_or_create_taste_profile(self, user_data: Dict) -> Tuple[Dict, bool]:
+        """Return (taste_profile, from_cache). Uses on-disk cache keyed by user_id.
+        If cached profile is insufficient (no genres and no sonic tags), regenerate.
+        """
+        try:
+            user_id = (user_data or {}).get('profile', {}).get('id')
+            if not user_id:
+                return {}, False
+            cache = self._load_taste_profile_cache()
+            if user_id in cache and isinstance(cache[user_id], dict):
+                cached = cache[user_id]
+                # Treat empty profiles as insufficient and rebuild
+                if not cached.get('preferred_genres') and not cached.get('sonic_profile'):
+                    profile = generate_taste_profile(user_data)
+                    cache[user_id] = profile
+                    self._save_taste_profile_cache(cache)
+                    return profile, False
+                return cached, True
+            profile = generate_taste_profile(user_data)
+            cache[user_id] = profile
+            self._save_taste_profile_cache(cache)
+            return profile, False
+        except Exception as e:
+            logger.warning(f"Taste profile generation failed, using empty profile: {e}")
+            return {}, False
+
     def is_ready(self) -> bool:
         """Check if the workflow is ready to execute"""
         return any([self.spotify_client, self.recommender, self.llm_agent])
@@ -202,7 +254,23 @@ class MultiAgentWorkflow:
         try:
             logger.info(f"Starting playlist generation workflow for mood: {mood}, activity: {activity}, tracks: {num_tracks}")
 
-            # Strategy routing: if llm_driven, delegate to LLMDrivenWorkflow
+            # Step 0: Retrieve user data and compute taste profile (with caching)
+            warnings: List[str] = []
+            user_data = self._retrieve_user_data()
+            if not user_data:
+                return {'error': 'Failed to retrieve user data. Please ensure you are connected to Spotify.'}
+            taste_profile, from_cache = self._get_or_create_taste_profile(user_data)
+            # If heuristic profile was used or profile is very weak, inform via warnings
+            try:
+                if isinstance(taste_profile, dict):
+                    if taste_profile.get('_source') == 'heuristic':
+                        warnings.append('LLM-generated profile was weak; using a heuristic profile instead.')
+                    elif not taste_profile.get('preferred_genres') and not taste_profile.get('sonic_profile'):
+                        warnings.append('User taste profile could not be generated; proceeding without personalization boost.')
+            except Exception:
+                pass
+
+            # Strategy routing: if llm_driven, delegate to LLMDrivenWorkflow (pass taste_profile)
             if isinstance(strategy, str) and strategy.lower() == 'llm_driven':
                 try:
                     llm_flow = LLMDrivenWorkflow()
@@ -214,17 +282,21 @@ class MultiAgentWorkflow:
                         language_preference=language_preference,
                         keywords=keywords,
                         must_be_instrumental=must_be_instrumental,
-                        search_strictness=search_strictness
+                        search_strictness=search_strictness,
+                        taste_profile=taste_profile
                     )
                     # Add warnings passthrough if provided
                     if 'warnings' not in llm_result:
                         llm_result['warnings'] = []
+                    # Attach taste_profile for transparency
+                    llm_result['taste_profile'] = taste_profile
+                    llm_result.setdefault('metadata', {}).update({'taste_profile_cached': from_cache})
                     return llm_result
                 except Exception as e:
                     logger.warning(f"LLM-driven strategy failed, falling back to CF-first: {e}")
-                    # Continue with CF-first, attach a warning later
+                    warnings.append('LLM-driven path failed; fell back to CF-first.')
 
-            # Niche query strategy routing
+            # Niche query strategy routing (pass taste_profile)
             if isinstance(strategy, str) and strategy.lower() == 'niche_query':
                 niche_result = self.find_playlist_for_niche_query(
                     query=str(keywords or user_context or mood or activity),
@@ -234,17 +306,14 @@ class MultiAgentWorkflow:
                     num_tracks=num_tracks,
                     language_preference=language_preference,
                     must_be_instrumental=must_be_instrumental,
-                    search_strictness=search_strictness
+                    search_strictness=search_strictness,
+                    taste_profile=taste_profile
                 )
                 if 'warnings' not in niche_result:
                     niche_result['warnings'] = []
+                niche_result['taste_profile'] = taste_profile
+                niche_result.setdefault('metadata', {}).update({'taste_profile_cached': from_cache})
                 return niche_result
-            
-            # Step 1: Retrieve Agent - Get user data
-            warnings: List[str] = []
-            user_data = self._retrieve_user_data()
-            if not user_data:
-                return {'error': 'Failed to retrieve user data. Please ensure you are connected to Spotify.'}
             
             # Step 2: Filtering Agent - Get collaborative filtering recommendations
             collaborative_recs = self._get_collaborative_recommendations(user_data, num_tracks)
@@ -500,9 +569,46 @@ class MultiAgentWorkflow:
                 except Exception:
                     pass
 
+            # Apply simple taste-profile-based boosting using sonic_profile hints
+            if collaborative_recs and taste_profile:
+                try:
+                    sonic = [str(s).lower() for s in (taste_profile.get('sonic_profile') or [])]
+                    wants_high_energy = any('high-energy' in s or 'energetic' in s for s in sonic)
+                    wants_acoustic = any('acoustic' in s or 'lo-fi' in s or 'lofi' in s for s in sonic)
+                    if wants_high_energy or wants_acoustic:
+                        ids = [t.get('track_id') for t in collaborative_recs if t.get('track_id')]
+                        feats_map = self.spotify_client.get_audio_features_for_tracks(ids) if hasattr(self, 'spotify_client') and self.spotify_client else {}
+                        def boost(t: Dict) -> float:
+                            f = feats_map.get(t.get('track_id') or '') or {}
+                            b = 0.0
+                            if wants_high_energy:
+                                e = f.get('energy', 0.0)
+                                if e >= 0.6:
+                                    b += 0.1
+                            if wants_acoustic:
+                                a = f.get('acousticness', 0.0)
+                                if a >= 0.5:
+                                    b += 0.1
+                            return b
+                        collaborative_recs = sorted(
+                            collaborative_recs,
+                            key=lambda x: (x.get('score', 0.0) + boost(x), x.get('popularity', 0)),
+                            reverse=True
+                        )
+                except Exception as e:
+                    logger.warning(f"Taste profile boosting skipped due to error: {e}")
+
             # Step 3: Enhancement Agent - Enhance with LLM
+            # Attach taste profile into user_data for the LLM enhancer context
+            user_data_with_profile = dict(user_data)
+            try:
+                # Shallow copy and embed taste_profile
+                user_data_with_profile['taste_profile'] = taste_profile
+            except Exception:
+                user_data_with_profile = user_data
+
             enhanced_recs = self._enhance_recommendations_with_llm(
-                user_data, mood, activity, user_context, collaborative_recs
+                user_data_with_profile, mood, activity, user_context, collaborative_recs
             )
             if isinstance(enhanced_recs, dict) and enhanced_recs.get('error'):
                 warnings.append('AI model unavailable, using fallback.')
@@ -546,6 +652,7 @@ class MultiAgentWorkflow:
                 'mood': mood,
                 'activity': activity,
                 'user_context': user_context,
+                'taste_profile': taste_profile,
                 'collaborative_recommendations': collaborative_recs,
                 'enhanced_recommendations': enhanced_recs,
                 'final_playlist': final_playlist,
@@ -558,7 +665,8 @@ class MultiAgentWorkflow:
                     'llm_model': self.llm_agent.model_name if self.llm_agent else 'N/A',
                     'note': 'Demo mode - using sample data for demonstration',
                     'collaborative_tracks_count': len(collaborative_recs),
-                    'final_tracks_count': len(final_playlist.get('tracks', []))
+                    'final_tracks_count': len(final_playlist.get('tracks', [])),
+                    'taste_profile_cached': from_cache
                 },
                 'warnings': warnings
             }
