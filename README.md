@@ -81,6 +81,30 @@ OPENAI_API_KEY=your_openai_api_key
 HUGGINGFACE_TOKEN=your_huggingface_token
 ```
 
+### Optional: License Enforcement and Telemetry
+
+You can restrict unauthorized usage and get anonymous usage signals in your own deployments:
+
+```env
+# Enforce license (blocks app when invalid/missing)
+TUNIE_ENFORCE_LICENSE=False
+TUNIE_LICENSE_KEY=
+TUNIE_LICENSE_CHECK_URL=
+
+# Anonymous, privacy-safe telemetry (best-effort POST to your endpoint)
+TUNIE_TELEMETRY_URL=
+TUNIE_TELEMETRY_OPTOUT=False  # set True to disable
+
+# App identity
+TUNIE_APP_NAME=TuneGenie
+TUNIE_APP_VERSION=0.0.0
+```
+
+How it works:
+- On startup, the app sends an `app_started` telemetry ping to `TUNIE_TELEMETRY_URL` (unless opted out).
+- If `TUNIE_ENFORCE_LICENSE=True`, the app validates `TUNIE_LICENSE_KEY` via `TUNIE_LICENSE_CHECK_URL` and stops if invalid.
+- Telemetry payload includes a stable anonymous `installation_id`, app version, OS info, and hostname. No user data is sent.
+
 ### Spotify API Setup
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Create a new application
