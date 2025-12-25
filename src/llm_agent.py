@@ -6,6 +6,7 @@ Integrates with GPT-4 for contextual music recommendation enhancement
 import os
 import json
 import openai
+import time
 from typing import List, Dict, Optional, Any
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -84,13 +85,14 @@ class LLMAgent:
             # Initialize OpenAI client
             openai.api_key = self.api_key
             
-            # Initialize LangChain chat model
+            # Initialize LangChain chat model with streaming support
             self.llm = ChatOpenAI(
                 model_name="gpt-3.5-turbo",
                 temperature=self.temperature,
-                openai_api_key=self.api_key
+                openai_api_key=self.api_key,
+                streaming=True  # Enable streaming
             )
-            logger.info("OpenAI model initialized")
+            logger.info("OpenAI model initialized with streaming support")
         except Exception as e:
             logger.error(f"OpenAI initialization failed: {e}")
             # Fallback to Hugging Face
@@ -621,22 +623,53 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
             logger.error(f"Failed to analyze feedback: {e}")
             return {'error': str(e)}
     
-    def get_music_insights(self, question: str, user_context: str = "") -> Dict:
+    def _format_conversation_history(self, conversation_history: list) -> str:
         """
-        Get AI-powered music insights based on user question
+        Format conversation history into a context string for the AI
+        
+        Args:
+            conversation_history: List of dicts with 'query' and 'response' keys
+            
+        Returns:
+            Formatted string of previous conversation
+        """
+        if not conversation_history:
+            return ""
+        
+        # Take last 3 conversations for context (to avoid token limits)
+        recent_history = conversation_history[-3:]
+        
+        formatted = "Previous conversation:\n"
+        for i, chat in enumerate(recent_history, 1):
+            query = chat.get('query', '')
+            response = chat.get('response', '')
+            # Truncate long responses to save tokens
+            if len(response) > 200:
+                response = response[:200] + "..."
+            formatted += f"Q{i}: {query}\nA{i}: {response}\n\n"
+        
+        return formatted
+    
+    def get_music_insights(self, question: str, user_context: str = "", conversation_history: list = None) -> Dict:
+        """
+        Get AI-powered music insights based on user question with conversation memory
         
         Args:
             question: User's question about music
             user_context: Additional context about the user
+            conversation_history: List of previous Q&A pairs for follow-up context
             
         Returns:
             Dictionary with AI insights
         """
         try:
+            # Format conversation history for context
+            history_context = self._format_conversation_history(conversation_history)
+            
             if self.model_type == "huggingface":
-                return self._get_huggingface_insights(question, user_context)
+                return self._get_huggingface_insights(question, user_context, history_context)
             else:
-                return self._get_openai_insights(question, user_context)
+                return self._get_openai_insights(question, user_context, history_context)
             
         except Exception as e:
             logger.error(f"Failed to get music insights: {e}")
@@ -646,15 +679,128 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                 'timestamp': datetime.now().isoformat()
             }
     
-    def _get_huggingface_insights(self, question: str, user_context: str = "") -> Dict:
-        """Get insights using Hugging Face model or intelligent fallback"""
+    def get_music_insights_stream(self, question: str, user_context: str = "", conversation_history: list = None):
+        """
+        Get AI-powered music insights with streaming support (generator function)
+        
+        This method yields chunks of the response as they're generated, allowing
+        for real-time streaming display in the UI.
+        
+        Args:
+            question: User's question about music
+            user_context: Additional context about the user
+            conversation_history: List of previous Q&A pairs for follow-up context
+            
+        Yields:
+            Chunks of the response text as they're generated
+        """
         try:
+            # Format conversation history for context
+            history_context = self._format_conversation_history(conversation_history)
+            
+            if self.model_type == "huggingface":
+                # HuggingFace doesn't support true streaming, so we simulate it
+                yield from self._get_huggingface_insights_stream(question, user_context, history_context)
+            else:
+                # OpenAI supports true streaming via LangChain
+                yield from self._get_openai_insights_stream(question, user_context, history_context)
+            
+        except Exception as e:
+            logger.error(f"Failed to get streaming music insights: {e}")
+            yield f"❌ Error: {str(e)}"
+    
+    def _get_huggingface_insights_stream(self, question: str, user_context: str = "", history_context: str = ""):
+        """
+        Get insights using Hugging Face model with simulated streaming (generator)
+        
+        Since HuggingFace Inference API doesn't support true streaming,
+        we fetch the full response and yield it in chunks to simulate streaming.
+        """
+        try:
+            # Build the full context including conversation history
+            full_context = ""
+            if history_context:
+                full_context += history_context + "\n"
+            if user_context:
+                full_context += f"User context: {user_context}\n"
+            
             # First try the actual Hugging Face API
             if hasattr(self, 'model_url') and self.model_url:
+                prompt = f"{full_context}Current question: {question}\n\nAnswer (considering the conversation above):"
                 response = requests.post(
                     self.model_url,
                     headers=self.headers,
-                    json={"inputs": f"Question: {question}\nContext: {user_context}\n\nAnswer:"},
+                    json={"inputs": prompt},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    # Extract the generated text
+                    generated_text = ""
+                    
+                    if isinstance(result, list) and len(result) > 0:
+                        if 'generated_text' in result[0]:
+                            generated_text = result[0]['generated_text']
+                        elif 'text' in result[0]:
+                            generated_text = result[0]['text']
+                        else:
+                            generated_text = str(result[0])
+                    elif isinstance(result, dict):
+                        if 'generated_text' in result:
+                            generated_text = result['generated_text']
+                        elif 'text' in result:
+                            generated_text = result['text']
+                        else:
+                            generated_text = str(result)
+                    else:
+                        generated_text = str(result)
+                    
+                    # Clean up the response
+                    answer = generated_text.replace(f"Question: {question}\nContext: {user_context}\n\nAnswer:", '').strip()
+                    if answer and len(answer) > 10:
+                        # Simulate streaming by yielding in chunks
+                        chunk_size = 15  # Characters per chunk
+                        for i in range(0, len(answer), chunk_size):
+                            yield answer[i:i + chunk_size]
+                            time.sleep(0.03)  # Small delay to simulate streaming
+                        return
+            
+            # If API fails, use intelligent fallback with simulated streaming
+            fallback_result = self._get_intelligent_fallback(question, user_context, history_context)
+            insight = fallback_result.get('insight', '')
+            # Simulate streaming by yielding in chunks
+            chunk_size = 15
+            for i in range(0, len(insight), chunk_size):
+                yield insight[i:i + chunk_size]
+                time.sleep(0.03)  # Small delay to simulate streaming
+                
+        except Exception as e:
+            logger.warning(f"Hugging Face streaming failed: {e}")
+            # Ultimate fallback
+            error_msg = f"I can help you with music recommendations! For '{question}', here are some general tips based on your context."
+            chunk_size = 15
+            for i in range(0, len(error_msg), chunk_size):
+                yield error_msg[i:i + chunk_size]
+                time.sleep(0.03)
+    
+    def _get_huggingface_insights(self, question: str, user_context: str = "", history_context: str = "") -> Dict:
+        """Get insights using Hugging Face model or intelligent fallback with conversation memory"""
+        try:
+            # Build the full context including conversation history
+            full_context = ""
+            if history_context:
+                full_context += history_context + "\n"
+            if user_context:
+                full_context += f"User context: {user_context}\n"
+            
+            # First try the actual Hugging Face API
+            if hasattr(self, 'model_url') and self.model_url:
+                prompt = f"{full_context}Current question: {question}\n\nAnswer (considering the conversation above):"
+                response = requests.post(
+                    self.model_url,
+                    headers=self.headers,
+                    json={"inputs": prompt},
                     timeout=10
                 )
                 
@@ -691,19 +837,85 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                         }
             
             # If API fails or returns poor results, use intelligent fallback
-            return self._get_intelligent_fallback(question, user_context)
+            return self._get_intelligent_fallback(question, user_context, history_context)
                 
         except Exception as e:
             logger.warning(f"Hugging Face API call failed: {e}")
             # Use intelligent fallback
-            return self._get_intelligent_fallback(question, user_context)
+            return self._get_intelligent_fallback(question, user_context, history_context)
     
-    def _get_intelligent_fallback(self, question: str, user_context: str = "") -> Dict:
-        """Provide intelligent, contextual responses without external API calls"""
+    def _get_intelligent_fallback(self, question: str, user_context: str = "", history_context: str = "") -> Dict:
+        """Provide intelligent, contextual responses without external API calls, with conversation memory"""
         try:
             # Create contextual, intelligent responses based on the question
             question_lower = question.lower()
             context_lower = user_context.lower()
+            history_lower = history_context.lower() if history_context else ""
+            
+            # Check for follow-up question patterns
+            is_follow_up = any(phrase in question_lower for phrase in [
+                'more', 'another', 'similar', 'like that', 'same', 'also', 
+                'what else', 'anything else', 'tell me more', 'expand on',
+                'why', 'how about', 'what about', 'and', 'but'
+            ])
+            
+            # Extract context from previous conversation for follow-ups
+            # Priority: Check ACTIVITY-based topics FIRST (more specific), then genre topics
+            prev_topic = ""
+            if is_follow_up and history_context:
+                # Get the most recent Q&A pair for priority detection
+                # The history format is "Q1: ... A1: ... Q2: ... A2: ..."
+                # We want to prioritize the QUESTION content over the ANSWER content
+                
+                # Priority 1: Activity/mood-based topics (most specific)
+                if 'workout' in history_lower or 'exercise' in history_lower or 'working out' in history_lower or 'gym' in history_lower:
+                    prev_topic = "workout"
+                elif 'study' in history_lower or 'studying' in history_lower or 'focus' in history_lower or 'concentrate' in history_lower:
+                    prev_topic = "studying/focus"
+                elif 'sleep' in history_lower or 'bedtime' in history_lower or 'relax' in history_lower:
+                    prev_topic = "relaxation"
+                elif 'happy' in history_lower or 'joy' in history_lower or 'upbeat' in history_lower:
+                    prev_topic = "happy mood"
+                elif 'sad' in history_lower or 'melancholy' in history_lower or 'emotional' in history_lower:
+                    prev_topic = "sad mood"
+                # Priority 2: Genre-based topics (check question keywords, not answer mentions)
+                elif 'tell me about jazz' in history_lower or 'jazz music' in history_lower:
+                    prev_topic = "jazz"
+                elif 'tell me about hip-hop' in history_lower or 'hip-hop music' in history_lower or 'rap music' in history_lower:
+                    prev_topic = "hip-hop"
+                elif 'tell me about classical' in history_lower or 'classical music' in history_lower:
+                    prev_topic = "classical"
+                elif 'tell me about rock' in history_lower or 'rock music' in history_lower:
+                    prev_topic = "rock"
+                elif 'tell me about pop' in history_lower or 'pop music' in history_lower:
+                    prev_topic = "pop"
+                elif 'tell me about electronic' in history_lower or 'electronic music' in history_lower or 'edm' in history_lower:
+                    prev_topic = "electronic"
+            
+            # Handle follow-up questions with context from previous conversation
+            if is_follow_up and prev_topic:
+                follow_up_responses = {
+                    "jazz": "Building on our jazz discussion - if you want to explore more, try bebop (Charlie Parker, Dizzy Gillespie) for complex improvisation, or smooth jazz (Kenny G, George Benson) for a more relaxed feel. Modern jazz artists like Robert Glasper blend jazz with hip-hop and R&B. For vocal jazz, check out Ella Fitzgerald or modern artists like Norah Jones.",
+                    "hip-hop": "Continuing with hip-hop - you might also enjoy underground/conscious hip-hop (MF DOOM, Aesop Rock), boom bap classics (Nas, Wu-Tang Clan), or alternative hip-hop (Anderson .Paak, Tyler, The Creator). For production-focused hip-hop, check out J Dilla or Madlib's work.",
+                    "classical": "Expanding on classical music - try Romantic era composers (Chopin, Liszt, Brahms) for emotional depth, or Impressionist composers (Debussy, Ravel) for dreamy atmospheres. For modern classical, explore minimalists like Philip Glass or Max Richter. Film score composers like Hans Zimmer also bridge classical and contemporary.",
+                    "rock": "More rock recommendations - explore progressive rock (Pink Floyd, Yes) for complex arrangements, alternative rock (Radiohead, Arcade Fire) for experimental sounds, or indie rock (The Strokes, Arctic Monkeys) for modern vibes. Classic rock legends like Led Zeppelin and Queen are always worth revisiting.",
+                    "pop": "For more pop exploration - try synth-pop (The Weeknd, Dua Lipa), indie pop (Lorde, Billie Eilish), or classic pop (Michael Jackson, Madonna). K-pop (BTS, BLACKPINK) offers a unique blend of pop with intricate choreography and production.",
+                    "electronic": "Diving deeper into electronic music - explore house (Disclosure, Duke Dumont), techno (Carl Cox, Charlotte de Witte), ambient (Tycho, Boards of Canada), or future bass (Flume, San Holo). For live electronic, check out artists like ODESZA or Bonobo.",
+                    "happy mood": "For more uplifting music - try feel-good indie (Vampire Weekend, Phoenix), classic Motown (Stevie Wonder, Marvin Gaye), or modern funk (Bruno Mars, Doja Cat). Upbeat jazz and bossa nova can also be surprisingly mood-boosting!",
+                    "sad mood": "For more emotional music exploration - try post-rock (Sigur Rós, Explosions in the Sky), acoustic singer-songwriters (Iron & Wine, Fleet Foxes), or ambient/neo-classical (Ólafur Arnalds, Nils Frahm). These can help process emotions while being musically rich.",
+                    "workout": "More workout music ideas - try drum and bass (Netsky, Sub Focus) for high-intensity cardio, metal (Metallica, Bring Me The Horizon) for lifting, or dancehall/reggaeton for a fun cardio session. Power ballads can be great for cool-down stretches.",
+                    "studying/focus": "More focus music options - try video game soundtracks (they're designed for concentration!), lo-fi hip-hop playlists, or classical piano (Chopin's Nocturnes, Debussy). White noise or nature sounds can also boost concentration for some people.",
+                    "relaxation": "More relaxation music - try spa/wellness music, nature soundscapes (rain, ocean waves), soft piano (Ludovico Einaudi), or meditation music. Slow tempo jazz (50-70 BPM), new age artists like Enya, or ambient music by Brian Eno are also excellent for unwinding."
+                }
+                
+                if prev_topic in follow_up_responses:
+                    return {
+                        'insight': follow_up_responses[prev_topic],
+                        'question': question,
+                        'timestamp': datetime.now().isoformat(),
+                        'model_used': 'TuneGenie AI (Conversation Memory)',
+                        'is_follow_up': True
+                    }
             
             # Enhanced mood-based responses
             if 'happy' in question_lower or 'joy' in question_lower:
@@ -730,10 +942,10 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                 else:
                     insight = "Calm music should be soothing and peaceful. Look for slow tempos (60-80 BPM), gentle melodies, and minimal complexity. Genres like ambient, classical, acoustic, and some jazz can help reduce stress and create a peaceful atmosphere. Artists like Sigur Rós, Explosions in the Sky, or classical composers like Debussy create beautiful calming music."
             
-            elif 'focus' in question_lower or 'concentrate' in question_lower:
-                insight = "For focused work, choose music without lyrics to avoid cognitive interference. Instrumental music, ambient sounds, or lo-fi beats work well. Look for consistent tempos and minimal variations that provide background stimulation without distraction. Classical music, especially Baroque period pieces by Bach or Handel, has been shown to improve concentration. Modern options include lo-fi hip-hop, ambient electronic, or instrumental post-rock."
+            elif 'focus' in question_lower or 'concentrate' in question_lower or 'study' in question_lower or 'studying' in question_lower:
+                insight = "For studying and focused work, choose music without lyrics to avoid cognitive interference. Instrumental music, ambient sounds, or lo-fi beats work well. Look for consistent tempos and minimal variations that provide background stimulation without distraction. Classical music, especially Baroque period pieces by Bach or Handel, has been shown to improve concentration. Modern options include lo-fi hip-hop, ambient electronic, or instrumental post-rock."
             
-            elif 'workout' in question_lower or 'exercise' in question_lower:
+            elif 'workout' in question_lower or 'exercise' in question_lower or 'working out' in question_lower or 'gym' in question_lower:
                 insight = "Workout music should be high-energy and motivating! Look for songs with strong beats (120-150 BPM), powerful bass lines, and energizing rhythms. Genres like rock, electronic dance music, hip-hop, and pop are perfect for maintaining energy and motivation during exercise. Artists like Eminem, Linkin Park, The Weeknd, or electronic producers like Calvin Harris and David Guetta create perfect workout anthems."
             
             elif 'sleep' in question_lower or 'bedtime' in question_lower:
@@ -788,11 +1000,25 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                 # Generic but helpful response
                 insight = f"I can help you with music recommendations! For '{question}', consider what mood you're in and what activity you're doing. Different situations call for different types of music - energetic for workouts, calm for relaxation, focused for work, and so on. What specific mood or activity are you looking for music for? I can provide detailed recommendations based on your needs."
             
+            # Add personalization based on user context if available
+            personalized_suffix = ""
+            if user_context:
+                personalized_suffix = self._generate_personalization_suffix(user_context, question_lower)
+                if personalized_suffix:
+                    insight = insight + " " + personalized_suffix
+            
+            # Determine model attribution
+            model_used = 'Hugging Face (Free) - Intelligent Response'
+            if user_context and 'USER PROFILE' in user_context:
+                model_used = 'TuneGenie AI (Personalized)'
+            elif is_follow_up and prev_topic:
+                model_used = 'TuneGenie AI (Conversation Memory)'
+            
             return {
                 'insight': insight,
                 'question': question,
                 'timestamp': datetime.now().isoformat(),
-                'model_used': 'Hugging Face (Free) - Intelligent Response'
+                'model_used': model_used
             }
             
         except Exception as e:
@@ -805,25 +1031,110 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                 'model_used': 'Hugging Face (Free) - Fallback'
             }
     
-    def _get_openai_insights(self, question: str, user_context: str = "") -> Dict:
-        """Get insights using OpenAI model with enhanced fallback"""
+    def _generate_personalization_suffix(self, user_context: str, question_lower: str) -> str:
+        """
+        Generate a personalized recommendation suffix based on user's listening profile.
+        
+        Args:
+            user_context: The user's profile context string
+            question_lower: The lowercase question for context matching
+            
+        Returns:
+            A personalized recommendation string to append to the insight
+        """
         try:
-            # Create a system message for music insights
-            system_message = """You are TuneGenie, an AI-powered music expert. 
+            if not user_context or 'USER PROFILE' not in user_context:
+                return ""
+            
+            context_lower = user_context.lower()
+            personalization_parts = []
+            
+            # Extract user's favorite genres from context
+            favorite_genres = []
+            if 'favorite genres:' in context_lower:
+                genres_line = context_lower.split('favorite genres:')[1].split('\n')[0]
+                favorite_genres = [g.strip() for g in genres_line.split(',') if g.strip()]
+            
+            # Extract music style preferences
+            style_prefs = []
+            if 'music style preferences:' in context_lower:
+                style_line = context_lower.split('music style preferences:')[1].split('\n')[0]
+                style_prefs = [s.strip() for s in style_line.split(',') if s.strip()]
+            
+            # Extract recent artists
+            recent_artists = []
+            if 'recently listening to:' in context_lower:
+                artists_line = context_lower.split('recently listening to:')[1].split('\n')[0]
+                recent_artists = [a.strip() for a in artists_line.split(',') if a.strip()]
+            
+            # Generate personalized recommendations
+            if favorite_genres:
+                # Match question context with user's genres
+                if any(word in question_lower for word in ['recommend', 'suggest', 'what', 'which']):
+                    if len(favorite_genres) >= 2:
+                        personalization_parts.append(
+                            f"Based on your listening history, I see you enjoy {favorite_genres[0]} and {favorite_genres[1]} - "
+                            f"artists from these genres might resonate with you."
+                        )
+                    elif favorite_genres:
+                        personalization_parts.append(
+                            f"Since you're a fan of {favorite_genres[0]}, you might enjoy exploring similar artists."
+                        )
+            
+            if style_prefs:
+                # Add style-based recommendations
+                if 'high-energy' in style_prefs or 'upbeat' in style_prefs:
+                    if 'calm' in question_lower or 'relax' in question_lower or 'sleep' in question_lower:
+                        personalization_parts.append(
+                            "I notice you usually prefer energetic music, but for relaxation, "
+                            "you might try acoustic versions of songs from your favorite artists."
+                        )
+                elif 'acoustic' in style_prefs or 'lo-fi' in style_prefs:
+                    if 'workout' in question_lower or 'exercise' in question_lower or 'party' in question_lower:
+                        personalization_parts.append(
+                            "While you typically enjoy acoustic/lo-fi music, for this activity, "
+                            "consider more upbeat versions or remixes of your favorite tracks."
+                        )
+            
+            if recent_artists and not personalization_parts:
+                # Suggest similar artists
+                personalization_parts.append(
+                    f"Since you've been listening to {recent_artists[0]} recently, "
+                    f"you might also enjoy exploring similar artists in that style."
+                )
+            
+            return " ".join(personalization_parts)
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate personalization suffix: {e}")
+            return ""
+    
+    def _get_openai_insights(self, question: str, user_context: str = "", history_context: str = "") -> Dict:
+        """Get insights using OpenAI model with enhanced fallback and conversation memory"""
+        try:
+            # Create a system message for music insights with conversation awareness
+            system_message = """You are TuneGenie, an AI-powered music expert with conversation memory.
             Provide helpful, accurate, and engaging music insights, recommendations, and advice.
             Be conversational but informative. If you don't know something, say so honestly.
+            
+            IMPORTANT: Pay attention to the conversation history provided. If this is a follow-up question,
+            reference and build upon previous answers. Use context from earlier in the conversation.
             
             Focus on:
             - Specific music recommendations based on mood/activity
             - Genre explanations and characteristics
             - Artist information and musical style
             - Practical advice for music selection
-            - Emotional and psychological aspects of music"""
+            - Emotional and psychological aspects of music
+            - Connecting new answers to previous conversation context"""
             
-            # Create user message
-            user_message = f"Question: {question}"
+            # Create user message with conversation history
+            user_message = ""
+            if history_context:
+                user_message += f"{history_context}\n"
+            user_message += f"Current question: {question}"
             if user_context:
-                user_message += f"\nContext: {user_context}"
+                user_message += f"\nUser context: {user_context}"
             
             # Make API call
             response = self.llm.invoke([HumanMessage(content=user_message)])
@@ -842,7 +1153,71 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
             logger.warning(f"OpenAI API call failed: {e}")
             # Enhanced fallback: use intelligent fallback instead of error
             logger.info("Falling back to intelligent fallback system")
-            return self._get_intelligent_fallback(question, user_context)
+            return self._get_intelligent_fallback(question, user_context, history_context)
+    
+    def _get_openai_insights_stream(self, question: str, user_context: str = "", history_context: str = ""):
+        """
+        Get insights using OpenAI model with streaming support (generator)
+        
+        Yields chunks of text as they're generated by the OpenAI API.
+        """
+        try:
+            # Create a system message for music insights with conversation awareness
+            system_message = """You are TuneGenie, an AI-powered music expert with conversation memory.
+            Provide helpful, accurate, and engaging music insights, recommendations, and advice.
+            Be conversational but informative. If you don't know something, say so honestly.
+            
+            IMPORTANT: Pay attention to the conversation history provided. If this is a follow-up question,
+            reference and build upon previous answers. Use context from earlier in the conversation.
+            
+            Focus on:
+            - Specific music recommendations based on mood/activity
+            - Genre explanations and characteristics
+            - Artist information and musical style
+            - Practical advice for music selection
+            - Emotional and psychological aspects of music
+            - Connecting new answers to previous conversation context"""
+            
+            # Create user message with conversation history
+            user_message = ""
+            if history_context:
+                user_message += f"{history_context}\n"
+            user_message += f"Current question: {question}"
+            if user_context:
+                user_message += f"\nUser context: {user_context}"
+            
+            # Create messages for streaming
+            messages = [
+                SystemMessage(content=system_message),
+                HumanMessage(content=user_message)
+            ]
+            
+            # Stream the response chunk by chunk
+            full_response = ""
+            for chunk in self.llm.stream(messages):
+                if hasattr(chunk, 'content') and chunk.content:
+                    content = chunk.content
+                    full_response += content
+                    yield content
+            
+            # If streaming returned empty, fallback to non-streaming
+            if not full_response.strip():
+                logger.warning("Streaming returned empty, falling back to non-streaming")
+                response = self.llm.invoke(messages)
+                if hasattr(response, 'content'):
+                    yield response.content.strip()
+            
+        except Exception as e:
+            logger.warning(f"OpenAI streaming failed: {e}")
+            # Fallback to intelligent fallback with simulated streaming
+            logger.info("Falling back to intelligent fallback with simulated streaming")
+            fallback_result = self._get_intelligent_fallback(question, user_context, history_context)
+            insight = fallback_result.get('insight', '')
+            # Simulate streaming by yielding in chunks
+            chunk_size = 10
+            for i in range(0, len(insight), chunk_size):
+                yield insight[i:i + chunk_size]
+                time.sleep(0.05)  # Small delay to simulate streaming
     
     def save_prompt_template(self, prompt_name: str, template: str) -> bool:
         """

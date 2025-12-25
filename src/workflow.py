@@ -176,6 +176,82 @@ class MultiAgentWorkflow:
             'ready': self.is_ready()
         }
     
+    def get_user_context_for_ai(self) -> str:
+        """
+        Get a formatted user context string for AI insights based on their taste profile.
+        This provides personalized context for the AI to give better recommendations.
+        
+        Returns:
+            A formatted string describing the user's music preferences
+        """
+        try:
+            user_data = self._retrieve_user_data()
+            if not user_data:
+                return ""
+            
+            taste_profile, _ = self._get_or_create_taste_profile(user_data)
+            if not taste_profile:
+                return ""
+            
+            # Build a natural language description of user preferences
+            context_parts = []
+            
+            # Add user's display name if available
+            profile = user_data.get('profile', {})
+            display_name = profile.get('display_name', '')
+            if display_name:
+                context_parts.append(f"User: {display_name}")
+            
+            # Add preferred genres
+            genres = taste_profile.get('preferred_genres', [])
+            if genres:
+                # Handle both list of strings and list of dicts
+                genre_names = []
+                for g in genres[:5]:  # Top 5 genres
+                    if isinstance(g, dict):
+                        genre_names.append(g.get('genre', str(g)))
+                    else:
+                        genre_names.append(str(g))
+                if genre_names:
+                    context_parts.append(f"Favorite genres: {', '.join(genre_names)}")
+            
+            # Add sonic profile
+            sonic = taste_profile.get('sonic_profile', [])
+            if sonic:
+                sonic_tags = [str(s) for s in sonic[:5]]
+                if sonic_tags:
+                    context_parts.append(f"Music style preferences: {', '.join(sonic_tags)}")
+            
+            # Add lyrical themes
+            themes = taste_profile.get('lyrical_themes', [])
+            if themes:
+                theme_list = [str(t) for t in themes[:3]]
+                if theme_list:
+                    context_parts.append(f"Lyrical themes they enjoy: {', '.join(theme_list)}")
+            
+            # Add anti-preferences (what they don't like)
+            anti = taste_profile.get('anti_preferences', [])
+            if anti:
+                anti_list = [str(a) for a in anti[:3]]
+                if anti_list:
+                    context_parts.append(f"Genres/styles they avoid: {', '.join(anti_list)}")
+            
+            # Add top artists if available
+            top_artists = user_data.get('top_artists', {})
+            short_term = top_artists.get('short_term', [])
+            if short_term:
+                artist_names = [a.get('name', '') for a in short_term[:3] if a.get('name')]
+                if artist_names:
+                    context_parts.append(f"Recently listening to: {', '.join(artist_names)}")
+            
+            if context_parts:
+                return "USER PROFILE:\n" + "\n".join(context_parts)
+            return ""
+            
+        except Exception as e:
+            logger.warning(f"Failed to get user context for AI: {e}")
+            return ""
+    
     def execute_workflow(self, workflow_type: str, **kwargs) -> Dict:
         """
         Execute a specific workflow type
