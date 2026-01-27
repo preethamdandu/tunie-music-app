@@ -7,10 +7,11 @@ import os
 import json
 import openai
 import time
+import re
 from typing import List, Dict, Optional, Any
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
@@ -27,26 +28,53 @@ class LLMAgent:
         Initialize the LLM agent
         
         Args:
-            model_name: Model to use (huggingface, openai, or specific model name)
+            model_name: Model to use (huggingface only - openai disabled for cost protection)
             temperature: Creativity level (0.0 to 1.0)
+        
+        Note:
+            OpenAI is DISABLED by default to ensure $0 cost.
+            All AI features use HuggingFace's free tier.
         """
         self.model_name = model_name
         self.temperature = temperature
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.huggingface_token = os.getenv('HUGGINGFACE_TOKEN')
         
-        # Choose model based on availability
-        if model_name == "huggingface" or not self.api_key:
-            self.model_type = "huggingface"
-            self._initialize_huggingface()
-        else:
+        # =========================================================
+        # FREE MODE: Always use HuggingFace to guarantee $0 cost
+        # =========================================================
+        # OpenAI is DISABLED - every API call costs money ($0.002+)
+        # HuggingFace free tier: 300 req/hr, 1000 req/day
+        
+        # Import free mode settings
+        try:
+            from src.api_limits import FreeModeConfig, OPENAI_ENABLED
+            openai_enabled = OPENAI_ENABLED and FreeModeConfig.OPENAI_ENABLED
+        except ImportError:
+            openai_enabled = False  # Default to free mode
+        
+        if model_name != "huggingface" and self.api_key and openai_enabled:
+            # OpenAI explicitly enabled (user accepts costs)
             self.model_type = "openai"
             self._initialize_openai()
+            logger.warning("⚠️ OpenAI enabled - API calls will incur costs!")
+        else:
+            # FREE MODE (default)
+            self.model_type = "huggingface"
+            self._initialize_huggingface()
+            
+            if model_name != "huggingface" and self.api_key:
+                logger.info(
+                    "💰 OpenAI disabled for cost protection. "
+                    "Using HuggingFace free tier instead. "
+                    "To enable OpenAI, set OPENAI_ENABLED=True in api_limits.py"
+                )
         
         # Load prompt templates
         self.prompts = self._load_prompts()
         
-        logger.info(f"Initialized LLM agent with {self.model_type} ({model_name})")
+        logger.info(f"Initialized LLM agent with {self.model_type} (FREE MODE: ${0})")
+
     
     def _initialize_huggingface(self):
         """Initialize Hugging Face model (free alternative)"""
