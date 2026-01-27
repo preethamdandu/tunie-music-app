@@ -3,6 +3,8 @@ Spotify API Client for TuneGenie
 Handles authentication, user data retrieval, and playlist management
 """
 
+from __future__ import annotations
+
 import os
 import json
 import spotipy

@@ -6,6 +6,8 @@ hitting Spotify API rate limits. Works in conjunction with the
 reactive retry handler for defense in depth.
 """
 
+from __future__ import annotations
+
 import threading
 import time
 from dataclasses import dataclass

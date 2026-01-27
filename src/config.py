@@ -5,6 +5,8 @@ Centralized configuration using Pydantic Settings for type-safe,
 validated configuration management with environment variable support.
 """
 
+from __future__ import annotations
+
 from functools import lru_cache
 from typing import Literal
 

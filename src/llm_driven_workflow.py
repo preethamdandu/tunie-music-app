@@ -3,6 +3,8 @@ LLM-Driven Workflow for TuneGenie
 Alternative architecture where LLM understanding of mood drives candidate generation
 """
 
+from __future__ import annotations
+
 import os
 import json
 import logging

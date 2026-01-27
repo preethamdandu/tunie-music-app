@@ -5,6 +5,8 @@ Provides JSON-formatted structured logging with context propagation.
 Supports request tracking, user identification, and performance metrics.
 """
 
+from __future__ import annotations
+
 import logging
 import sys
 import json
