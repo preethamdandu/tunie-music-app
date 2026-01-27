@@ -69,12 +69,12 @@ class WorkflowExecutionDB(Base):
     steps: Mapped[list] = mapped_column(JSON, default=list)
     
     # Error handling
-    error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    error_step: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_step: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     # Context
-    user_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
-    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    request_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     
     # Metrics
     api_calls_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -115,11 +115,11 @@ class UserFeedbackDB(Base):
     
     # Feedback
     feedback_type: Mapped[str] = mapped_column(String(20))  # "liked", "disliked", "saved", "skipped"
-    rating: Mapped[float | None] = mapped_column(Float, nullable=True)  # 1-5 scale
+    rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 1-5 scale
     
     # Context
-    workflow_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    recommendation_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    workflow_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    recommendation_source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     
     # Metadata
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -133,7 +133,7 @@ class CacheEntryDB(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     cache_key: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     cache_value: Mapped[dict] = mapped_column(JSON)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -148,7 +148,7 @@ class DatabaseManager:
     Provides both sync and async interfaces for database operations.
     """
 
-    _instance: "DatabaseManager | None" = None
+    _instance: "Optional[DatabaseManager]" = None
     _engine = None
     _session_factory = None
 
@@ -272,7 +272,7 @@ class WorkflowHistoryRepository:
             )
             session.merge(db_workflow)
 
-    def get_by_id(self, workflow_id: str) -> dict | None:
+    def get_by_id(self, workflow_id: str) -> Optional[dict]:
         """Get a workflow by ID"""
         with self.db.session() as session:
             result = session.query(WorkflowExecutionDB).filter_by(workflow_id=workflow_id).first()
@@ -280,7 +280,7 @@ class WorkflowHistoryRepository:
                 return self._to_dict(result)
             return None
 
-    def get_recent(self, limit: int = 50, user_id: str | None = None) -> list[dict]:
+    def get_recent(self, limit: int = 50, user_id: Optional[str] = None) -> list[dict]:
         """Get recent workflow executions"""
         with self.db.session() as session:
             query = session.query(WorkflowExecutionDB)
@@ -363,7 +363,7 @@ class TasteProfileRepository:
             )
             session.merge(db_profile)
 
-    def get(self, user_id: str) -> dict | None:
+    def get(self, user_id: str) -> Optional[dict]:
         """Get a user's taste profile"""
         with self.db.session() as session:
             result = session.query(UserTasteProfileDB).filter_by(user_id=user_id).first()
@@ -376,7 +376,7 @@ class TasteProfileRepository:
 # Global Access Functions
 # ============================================================================
 
-_db_manager: DatabaseManager | None = None
+_db_manager: Optional[DatabaseManager] = None
 
 
 def get_db() -> DatabaseManager:

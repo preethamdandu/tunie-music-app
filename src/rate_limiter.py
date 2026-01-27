@@ -10,7 +10,7 @@ import threading
 import time
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Optional
 
 from .constants import (
     SPOTIFY_RATE_LIMIT_REQUESTS_PER_SECOND,
@@ -241,7 +241,7 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-_rate_limiter: RateLimiter | None = None
+_rate_limiter: Optional[RateLimiter] = None
 
 
 def get_rate_limiter() -> RateLimiter:

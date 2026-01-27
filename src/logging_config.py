@@ -10,7 +10,7 @@ import sys
 import json
 from contextvars import ContextVar
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 from functools import wraps
 import time
 
@@ -158,7 +158,7 @@ def get_logger(name: str) -> ContextualLogger:
 def setup_logging(
     level: str = "INFO",
     json_output: bool = False,
-    log_file: str | None = None,
+    log_file: Optional[str] = None,
 ) -> None:
     """
     Configure application-wide logging.
@@ -229,7 +229,7 @@ def clear_context() -> None:
 # Performance Logging Decorators
 # ============================================================================
 
-def log_execution_time(logger: logging.Logger | ContextualLogger | None = None):
+def log_execution_time(logger=None):
     """
     Decorator that logs function execution time.
     

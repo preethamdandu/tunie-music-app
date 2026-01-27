@@ -399,7 +399,7 @@ class SpotifyClient:
             logger.error(f"Failed to search tracks: {e}")
             return []
 
-    def search_tracks_by_keywords(self, keywords: Dict[str, List[str]] | str, limit: int = 50) -> List[Dict]:
+    def search_tracks_by_keywords(self, keywords, limit: int = 50) -> List[Dict]:
         """
         Search Spotify for tracks using parsed keywords. Supports artist, title/track, album, genre, and raw terms.
         If a string is provided, it's treated as a raw query.

@@ -62,12 +62,12 @@ class LLMSettings(BaseSettings):
 
     model_config = SettingsConfigDict(extra="ignore")
 
-    openai_api_key: SecretStr | None = Field(
+    openai_api_key: Optional[SecretStr] = Field(
         default=None,
         alias="OPENAI_API_KEY",
         description="OpenAI API key for GPT models",
     )
-    huggingface_token: SecretStr | None = Field(
+    huggingface_token: Optional[SecretStr] = Field(
         default=None,
         alias="HUGGINGFACE_TOKEN",
         description="HuggingFace API token for fallback models",
@@ -151,11 +151,11 @@ class SecuritySettings(BaseSettings):
         default=False,
         description="Require valid license to run",
     )
-    license_key: SecretStr | None = Field(
+    license_key: Optional[SecretStr] = Field(
         default=None,
         description="License key for validation",
     )
-    license_check_url: str | None = Field(
+    license_check_url: Optional[str] = Field(
         default=None,
         description="URL for license validation endpoint",
     )
@@ -163,7 +163,7 @@ class SecuritySettings(BaseSettings):
         default=False,
         description="Opt out of telemetry",
     )
-    telemetry_url: str | None = Field(
+    telemetry_url: Optional[str] = Field(
         default=None,
         description="Telemetry endpoint URL",
     )

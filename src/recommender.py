@@ -8,9 +8,25 @@ import json
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple, Optional
-from surprise import Dataset, Reader, SVD, KNNBasic, KNNWithMeans, NMF
-from surprise.model_selection import train_test_split, cross_validate
-from surprise.accuracy import rmse, mae
+
+# Try to import surprise, but make it optional
+try:
+    from surprise import Dataset, Reader, SVD, KNNBasic, KNNWithMeans, NMF
+    from surprise.model_selection import train_test_split, cross_validate
+    from surprise.accuracy import rmse, mae
+    SURPRISE_AVAILABLE = True
+except ImportError:
+    SURPRISE_AVAILABLE = False
+    # Create mock classes for when surprise is not available
+    class SVD:
+        pass
+    class KNNBasic:
+        pass
+    class KNNWithMeans:
+        pass
+    class NMF:
+        pass
+    
 import joblib
 import logging
 from datetime import datetime

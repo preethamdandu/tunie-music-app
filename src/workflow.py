@@ -6,7 +6,7 @@ Coordinates different agents for automated playlist generation
 import os
 import json
 import logging
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
@@ -309,7 +309,7 @@ class MultiAgentWorkflow:
     def _execute_playlist_generation_workflow(self, mood: str, activity: str, 
                                             user_context: str = "", num_tracks: int = 20, 
                                             language_preference: str = "Any Language",
-                                            keywords: Optional[Dict] | str = None,
+                                            keywords: Union[Dict, str, None] = None,
                                             must_be_instrumental: bool = False,
                                             search_strictness: int = 1,
                                             strategy: str = 'cf_first') -> Dict:
@@ -754,7 +754,7 @@ class MultiAgentWorkflow:
             logger.error(f"Playlist generation workflow failed: {e}")
             return {'error': str(e)}
 
-    def _parse_keywords(self, keywords: Optional[Dict] | str) -> Optional[Dict[str, List[str]]]:
+    def _parse_keywords(self, keywords: Union[Dict, str, None]) -> Optional[Dict[str, List[str]]]:
         """Parse a free-text or dict of keywords into a normalized structure.
         Supported keys: artists, titles, albums, genres, raw, context.
         Free-text parsing supports prefixes: artist:, title:, track:, album:, genre:
