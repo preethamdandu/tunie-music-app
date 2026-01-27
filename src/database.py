@@ -5,6 +5,8 @@ SQLAlchemy-based database layer for persistent storage with proper
 connection management and migration support.
 """
 
+from __future__ import annotations
+
 import os
 from contextlib import contextmanager
 from datetime import datetime

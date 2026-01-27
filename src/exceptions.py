@@ -5,6 +5,8 @@ Centralized exception hierarchy for consistent error handling across the applica
 Each exception type provides context for debugging and appropriate error responses.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 
