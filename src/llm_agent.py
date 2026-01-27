@@ -1,6 +1,16 @@
 """
 LLM Agent for TuneGenie
-Integrates with GPT-4 for contextual music recommendation enhancement
+Multi-Provider AI Integration for contextual music recommendation enhancement
+
+2026 Multi-Provider Strategy:
+- Primary: Groq (fastest, free tier)
+- Backup 1: Google Gemini (1M context, free tier)
+- Backup 2: OpenRouter (multiple free models)
+- Backup 3: DeepSeek (5M free tokens)
+- Backup 4: HuggingFace (limited free tier)
+- Fallback: Rule-based (no AI, always works)
+
+All providers offer FREE tiers - ensuring $0 cost operation.
 """
 
 import os
@@ -20,20 +30,34 @@ import requests
 # Load environment and logging in app.py (entrypoint)
 logger = logging.getLogger(__name__)
 
+
 class LLMAgent:
-    """LLM agent for contextual music recommendation enhancement"""
+    """
+    LLM agent for contextual music recommendation enhancement.
     
-    def __init__(self, model_name: str = "huggingface", temperature: float = 0.7):
+    Uses multi-provider fallback chain for maximum reliability and $0 cost:
+    1. Groq (fastest) -> 2. Gemini (1M context) -> 3. OpenRouter (flexible)
+    -> 4. DeepSeek (best value) -> 5. HuggingFace (limited) -> 6. Rule-based
+    """
+    
+    def __init__(self, model_name: str = "auto", temperature: float = 0.7):
         """
-        Initialize the LLM agent
+        Initialize the LLM agent with multi-provider support.
         
         Args:
-            model_name: Model to use (huggingface only - openai disabled for cost protection)
+            model_name: Model to use:
+                - "auto": Automatically select best available provider (recommended)
+                - "groq": Force Groq (fastest)
+                - "gemini": Force Google Gemini
+                - "openrouter": Force OpenRouter
+                - "deepseek": Force DeepSeek
+                - "huggingface": Force HuggingFace (legacy)
+                - "openai": Force OpenAI (DISABLED - costs money)
             temperature: Creativity level (0.0 to 1.0)
         
         Note:
             OpenAI is DISABLED by default to ensure $0 cost.
-            All AI features use HuggingFace's free tier.
+            All AI features use FREE tier providers.
         """
         self.model_name = model_name
         self.temperature = temperature
@@ -41,10 +65,10 @@ class LLMAgent:
         self.huggingface_token = os.getenv('HUGGINGFACE_TOKEN')
         
         # =========================================================
-        # FREE MODE: Always use HuggingFace to guarantee $0 cost
+        # MULTI-PROVIDER FREE MODE (2026)
         # =========================================================
-        # OpenAI is DISABLED - every API call costs money ($0.002+)
-        # HuggingFace free tier: 300 req/hr, 1000 req/day
+        # Priority: Groq > Gemini > OpenRouter > DeepSeek > HuggingFace
+        # All providers have FREE tiers - $0 cost guaranteed
         
         # Import free mode settings
         try:
@@ -53,58 +77,224 @@ class LLMAgent:
         except ImportError:
             openai_enabled = False  # Default to free mode
         
-        if model_name != "huggingface" and self.api_key and openai_enabled:
+        # Initialize multi-provider client
+        self._ai_client = None
+        self._initialize_multi_provider()
+        
+        # Determine model type based on available providers
+        if model_name == "openai" and self.api_key and openai_enabled:
             # OpenAI explicitly enabled (user accepts costs)
             self.model_type = "openai"
             self._initialize_openai()
             logger.warning("⚠️ OpenAI enabled - API calls will incur costs!")
+        elif model_name == "auto" or model_name in ["groq", "gemini", "openrouter", "deepseek"]:
+            # Use multi-provider system (FREE)
+            self.model_type = "multi_provider"
+            logger.info(
+                f"🚀 Multi-provider AI initialized. "
+                f"Available: {self._get_available_providers()}"
+            )
         else:
-            # FREE MODE (default)
+            # Legacy HuggingFace fallback
             self.model_type = "huggingface"
             self._initialize_huggingface()
-            
-            if model_name != "huggingface" and self.api_key:
-                logger.info(
-                    "💰 OpenAI disabled for cost protection. "
-                    "Using HuggingFace free tier instead. "
-                    "To enable OpenAI, set OPENAI_ENABLED=True in api_limits.py"
-                )
+            logger.info("Using HuggingFace as fallback provider")
         
         # Load prompt templates
         self.prompts = self._load_prompts()
         
-        logger.info(f"Initialized LLM agent with {self.model_type} (FREE MODE: ${0})")
+        # Log initialization
+        if self.model_type == "multi_provider":
+            providers = self._get_available_providers()
+            logger.info(
+                f"✅ LLM Agent initialized with multi-provider support "
+                f"(FREE MODE: $0) - Providers: {providers}"
+            )
+        else:
+            logger.info(f"Initialized LLM agent with {self.model_type} (FREE MODE: $0)")
+    
+    def _initialize_multi_provider(self):
+        """Initialize the multi-provider AI client."""
+        try:
+            from src.ai_providers import get_ai_client, get_available_providers
+            self._ai_client = get_ai_client()
+            logger.info(f"Multi-provider client initialized: {get_available_providers()}")
+        except ImportError as e:
+            logger.warning(f"Multi-provider module not available: {e}")
+            self._ai_client = None
+        except Exception as e:
+            logger.error(f"Failed to initialize multi-provider client: {e}")
+            self._ai_client = None
+    
+    def _get_available_providers(self) -> List[str]:
+        """Get list of available AI providers."""
+        try:
+            from src.ai_providers import get_available_providers
+            return get_available_providers()
+        except ImportError:
+            return ["huggingface"] if self.huggingface_token else []
+    
+    def _call_ai(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        fallback_response: Optional[str] = None,
+        max_tokens: int = 1024,
+    ) -> str:
+        """
+        Call AI using multi-provider fallback chain.
+        
+        Args:
+            prompt: User prompt
+            system_prompt: System prompt for context
+            fallback_response: Response to use if all providers fail
+            max_tokens: Maximum tokens to generate
+            
+        Returns:
+            AI response content
+        """
+        # Try multi-provider client first
+        if self._ai_client:
+            try:
+                from src.ai_providers import ai_complete
+                response = ai_complete(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    temperature=self.temperature,
+                    max_tokens=max_tokens,
+                    fallback_response=fallback_response,
+                )
+                if response.success:
+                    logger.debug(
+                        f"AI response from {response.provider.value} "
+                        f"({response.latency_ms:.0f}ms)"
+                    )
+                    return response.content
+                else:
+                    logger.warning(f"AI call failed: {response.error}")
+            except Exception as e:
+                logger.error(f"Multi-provider call failed: {e}")
+        
+        # Fallback to legacy HuggingFace
+        if self.model_type == "huggingface" or self.huggingface_token:
+            try:
+                return self._call_huggingface(prompt, system_prompt)
+            except Exception as e:
+                logger.error(f"HuggingFace fallback failed: {e}")
+        
+        # Return fallback response
+        return fallback_response or ""
+    
+    def _call_ai_json(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        default_json: Optional[Dict] = None,
+        max_tokens: int = 1024,
+    ) -> Dict:
+        """
+        Call AI and parse response as JSON.
+        
+        Args:
+            prompt: User prompt (should request JSON output)
+            system_prompt: System prompt
+            default_json: Default JSON if parsing fails
+            max_tokens: Maximum tokens
+            
+        Returns:
+            Parsed JSON dict
+        """
+        # Try multi-provider client first
+        if self._ai_client:
+            try:
+                from src.ai_providers import ai_complete_json
+                data, response = ai_complete_json(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    temperature=self.temperature,
+                    max_tokens=max_tokens,
+                    default_json=default_json,
+                )
+                if data:
+                    return data
+            except Exception as e:
+                logger.error(f"Multi-provider JSON call failed: {e}")
+        
+        # Fallback to legacy method
+        content = self._call_ai(prompt, system_prompt, max_tokens=max_tokens)
+        if content:
+            try:
+                # Handle markdown code blocks
+                if content.startswith("```json"):
+                    content = content[7:]
+                if content.startswith("```"):
+                    content = content[3:]
+                if content.endswith("```"):
+                    content = content[:-3]
+                return json.loads(content.strip())
+            except json.JSONDecodeError:
+                pass
+        
+        return default_json or {}
+    
+    def _call_huggingface(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        """Legacy HuggingFace API call."""
+        full_prompt = prompt
+        if system_prompt:
+            full_prompt = f"{system_prompt}\n\n{prompt}"
+        
+        response = requests.post(
+            self.model_url,
+            headers=self.headers,
+            json={
+                "inputs": full_prompt,
+                "parameters": {
+                    "temperature": self.temperature,
+                    "max_new_tokens": 512,
+                    "return_full_text": False,
+                },
+            },
+            timeout=60,
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                return data[0].get("generated_text", "")
+            return str(data)
+        
+        raise Exception(f"HuggingFace API error: {response.status_code}")
 
     
     def _initialize_huggingface(self):
-        """Initialize Hugging Face model (free alternative)"""
+        """Initialize Hugging Face model (legacy fallback)"""
         try:
             # Use a more reliable, commonly available model
             self.model_url = "https://api-inference.huggingface.co/models/facebook/opt-125m"
             self.headers = {"Authorization": f"Bearer {self.huggingface_token}" if self.huggingface_token else ""}
             
-            # Test the connection
+            # Test the connection (non-blocking)
             if self.huggingface_token:
-                import requests
-                test_response = requests.post(
-                    self.model_url,
-                    headers=self.headers,
-                    json={"inputs": "test"},
-                    timeout=10
-                )
-                if test_response.status_code == 200:
-                    logger.info("Hugging Face model connection successful")
-                elif test_response.status_code == 503:
-                    logger.info("Hugging Face model is loading (this is normal)")
-                else:
-                    logger.warning(f"Hugging Face model test failed: {test_response.status_code}")
-                    # Fallback to a simpler model
-                    self.model_url = "https://api-inference.huggingface.co/models/gpt2"
+                try:
+                    test_response = requests.post(
+                        self.model_url,
+                        headers=self.headers,
+                        json={"inputs": "test"},
+                        timeout=5
+                    )
+                    if test_response.status_code == 200:
+                        logger.info("HuggingFace model connection successful")
+                    elif test_response.status_code == 503:
+                        logger.info("HuggingFace model is loading (this is normal)")
+                    else:
+                        logger.warning(f"HuggingFace model test failed: {test_response.status_code}")
+                        self.model_url = "https://api-inference.huggingface.co/models/gpt2"
+                except requests.exceptions.Timeout:
+                    logger.warning("HuggingFace connection test timed out")
             
-            logger.info("Using Hugging Face free model")
+            logger.info("HuggingFace initialized as fallback provider")
         except Exception as e:
-            logger.warning(f"Hugging Face initialization failed: {e}")
-            # Use a fallback model
+            logger.warning(f"HuggingFace initialization failed: {e}")
             self.model_url = "https://api-inference.huggingface.co/models/gpt2"
     
     def _initialize_openai(self):
@@ -289,41 +479,119 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
     
     def analyze_mood_and_context(self, user_context: str, mood: str, activity: str) -> Dict:
         """Analyze user's mood and context for music recommendations"""
+        # Default fallback response
+        fallback = {
+            'mood_analysis': f"Based on your mood ({mood}) and activity ({activity}), I recommend music that matches your current state.",
+            'music_characteristics': {
+                'tempo': 'medium' if mood in ['calm', 'focused'] else 'high',
+                'energy': 'low' if mood in ['calm', 'relaxed'] else 'high',
+                'valence': 'positive' if mood in ['happy', 'excited'] else 'neutral'
+            }
+        }
+        
         try:
-            if self.model_type == "huggingface":
+            # Use multi-provider system if available
+            if self.model_type == "multi_provider" and self._ai_client:
+                prompt = self.prompts.get('mood_analysis', '').format(
+                    user_context=user_context,
+                    mood=mood,
+                    activity=activity
+                )
+                
+                system_prompt = (
+                    "You are a music expert and psychologist. Analyze the user's mood "
+                    "and suggest what type of music would be most beneficial. "
+                    "Return your response as valid JSON."
+                )
+                
+                result = self._call_ai_json(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    default_json=fallback,
+                    max_tokens=512,
+                )
+                
+                # Ensure required fields exist
+                result.setdefault('mood_analysis', fallback['mood_analysis'])
+                result.setdefault('music_characteristics', fallback['music_characteristics'])
+                return result
+            
+            # Legacy paths
+            elif self.model_type == "huggingface":
                 return self._analyze_mood_huggingface(user_context, mood, activity)
             else:
                 return self._analyze_mood_openai(user_context, mood, activity)
+                
         except Exception as e:
             logger.error(f"Failed to analyze mood and context: {e}")
-            return {
-                'mood_analysis': f"Based on your mood ({mood}) and activity ({activity}), I recommend music that matches your current state.",
-                'music_characteristics': {
-                    'tempo': 'medium' if mood in ['calm', 'focused'] else 'high',
-                    'energy': 'low' if mood in ['calm', 'relaxed'] else 'high',
-                    'valence': 'positive' if mood in ['happy', 'excited'] else 'neutral'
-                }
-            }
+            return fallback
     
     def enhance_recommendations(self, user_data: Dict, context: str, collaborative_recs: List[Dict]) -> Dict:
         """Enhance collaborative filtering recommendations with LLM insights"""
+        # Default fallback response
+        fallback = {
+            'description': f"Enhanced playlist based on {context}",
+            'adjustments': "Recommendations optimized for your current context",
+            'playlist_name': "Personalized TuneGenie Playlist",
+            'analysis': "Playlist curated based on your preferences"
+        }
+        
         try:
-            if self.model_type == "huggingface":
+            # Use multi-provider system if available
+            if self.model_type == "multi_provider" and self._ai_client:
+                # Prepare track info for the prompt
+                tracks_info = []
+                for track in collaborative_recs[:15]:  # Limit to avoid token overflow
+                    tracks_info.append({
+                        'name': track.get('name', 'Unknown'),
+                        'artists': track.get('artists', ['Unknown']),
+                        'energy': track.get('energy', 0.5),
+                    })
+                
+                prompt = self.prompts.get('playlist_enhancement', '').format(
+                    user_profile=json.dumps(user_data.get('taste_profile', {}), indent=2)[:500],
+                    context=context,
+                    collaborative_recs=json.dumps(tracks_info, indent=2)
+                )
+                
+                system_prompt = (
+                    "You are a senior music curator. Analyze the playlist and provide "
+                    "improvements. Return ONLY valid JSON with keys: analysis, adjustments, "
+                    "description, playlist_name"
+                )
+                
+                result = self._call_ai_json(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    default_json=fallback,
+                    max_tokens=1024,
+                )
+                
+                # Ensure required fields exist
+                result.setdefault('description', fallback['description'])
+                result.setdefault('playlist_name', fallback['playlist_name'])
+                result.setdefault('adjustments', fallback['adjustments'])
+                return result
+            
+            # Legacy paths
+            elif self.model_type == "huggingface":
                 return self._enhance_recommendations_huggingface(user_data, context, collaborative_recs)
             else:
                 return self._enhance_recommendations_openai(user_data, context, collaborative_recs)
+                
         except Exception as e:
             logger.error(f"Failed to enhance recommendations: {e}")
-            return {
-                'description': f"Enhanced playlist based on {context}",
-                'adjustments': "Recommendations optimized for your current context",
-                'playlist_name': "Personalized TuneGenie Playlist"
-            }
+            return fallback
     
     def generate_playlist(self, user_data: Dict, mood: str, activity: str, available_tracks: List[Dict], num_tracks: int = 20) -> Dict:
         """Generate a personalized playlist based on user data, mood, and activity"""
         try:
-            if self.model_type == "huggingface":
+            # Use multi-provider system if available
+            if self.model_type == "multi_provider" and self._ai_client:
+                return self._generate_playlist_multi_provider(
+                    user_data, mood, activity, available_tracks, num_tracks
+                )
+            elif self.model_type == "huggingface":
                 return self._generate_playlist_huggingface(user_data, mood, activity, available_tracks, num_tracks)
             else:
                 return self._generate_playlist_openai(user_data, mood, activity, available_tracks, num_tracks)
@@ -331,6 +599,72 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
             logger.error(f"Failed to generate playlist: {e}")
             # Fallback playlist generation
             return self._generate_fallback_playlist(user_data, mood, activity, available_tracks, num_tracks)
+    
+    def _generate_playlist_multi_provider(
+        self,
+        user_data: Dict,
+        mood: str,
+        activity: str,
+        available_tracks: List[Dict],
+        num_tracks: int = 20
+    ) -> Dict:
+        """Generate playlist using multi-provider AI system."""
+        # Prepare track info
+        tracks_info = []
+        for track in available_tracks[:30]:  # Limit to avoid token overflow
+            tracks_info.append({
+                'name': track.get('name', 'Unknown'),
+                'artists': track.get('artists', ['Unknown']),
+                'track_id': track.get('track_id', ''),
+            })
+        
+        prompt = f"""Create a personalized playlist for the following context:
+
+Mood: {mood}
+Activity: {activity}
+Available Tracks: {json.dumps(tracks_info[:20], indent=2)}
+Number of tracks needed: {num_tracks}
+
+Please:
+1. Select the most appropriate tracks for this mood and activity
+2. Order them for optimal flow
+3. Provide a compelling playlist description
+4. Suggest a creative playlist name
+
+Return ONLY valid JSON with keys:
+- playlist_name: string
+- description: string (1-2 sentences)
+- selected_tracks: array of track objects with track_id, name, artists
+- track_order: array of track_ids in recommended order"""
+
+        system_prompt = (
+            "You are a professional music curator. Create playlists that perfectly "
+            "match the user's mood and activity. Be creative with names and descriptions."
+        )
+        
+        result = self._call_ai_json(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            default_json=None,
+            max_tokens=1500,
+        )
+        
+        # If AI returned valid result, use it
+        if result and result.get('playlist_name'):
+            # Ensure we have tracks
+            selected = result.get('selected_tracks', [])
+            if not selected:
+                selected = available_tracks[:num_tracks]
+            
+            return {
+                'playlist_name': result.get('playlist_name', f'TuneGenie {mood} {activity} Playlist'),
+                'description': result.get('description', f'AI-curated playlist for {mood} mood during {activity}'),
+                'selected_tracks': selected[:num_tracks],
+                'tracks': selected[:num_tracks],
+            }
+        
+        # Fallback to rule-based
+        return self._generate_fallback_playlist(user_data, mood, activity, available_tracks, num_tracks)
 
     def generate_search_strategy(self, prompt: str) -> Dict:
         """

@@ -355,6 +355,59 @@ _quota_managers: Dict[str, QuotaManager] = {}
 _quota_lock = threading.Lock()
 
 
+# Import provider limits
+try:
+    from src.api_limits import (
+        GROQ_REQUESTS_PER_MINUTE,
+        GROQ_REQUESTS_PER_DAY,
+        GEMINI_REQUESTS_PER_MINUTE,
+        GEMINI_REQUESTS_PER_DAY,
+        OPENROUTER_REQUESTS_PER_MINUTE,
+        OPENROUTER_REQUESTS_PER_DAY,
+        DEEPSEEK_REQUESTS_PER_MINUTE,
+        DEEPSEEK_REQUESTS_PER_DAY,
+    )
+except ImportError:
+    # Fallback defaults
+    GROQ_REQUESTS_PER_MINUTE = 25
+    GROQ_REQUESTS_PER_DAY = 14400
+    GEMINI_REQUESTS_PER_MINUTE = 12
+    GEMINI_REQUESTS_PER_DAY = 800
+    OPENROUTER_REQUESTS_PER_MINUTE = 15
+    OPENROUTER_REQUESTS_PER_DAY = 200
+    DEEPSEEK_REQUESTS_PER_MINUTE = 50
+    DEEPSEEK_REQUESTS_PER_DAY = 800
+
+
+# Provider quota limits (hourly = minute * 60, daily as configured)
+PROVIDER_QUOTA_LIMITS = {
+    "groq": {
+        "hourly": GROQ_REQUESTS_PER_MINUTE * 60,
+        "daily": GROQ_REQUESTS_PER_DAY,
+    },
+    "gemini": {
+        "hourly": GEMINI_REQUESTS_PER_MINUTE * 60,
+        "daily": GEMINI_REQUESTS_PER_DAY,
+    },
+    "openrouter": {
+        "hourly": OPENROUTER_REQUESTS_PER_MINUTE * 60,
+        "daily": OPENROUTER_REQUESTS_PER_DAY,
+    },
+    "deepseek": {
+        "hourly": DEEPSEEK_REQUESTS_PER_MINUTE * 60,
+        "daily": DEEPSEEK_REQUESTS_PER_DAY,
+    },
+    "huggingface": {
+        "hourly": HUGGINGFACE_REQUESTS_PER_HOUR,
+        "daily": HUGGINGFACE_REQUESTS_PER_DAY,
+    },
+    "openai": {
+        "hourly": 0,  # Disabled
+        "daily": 0,
+    },
+}
+
+
 def get_quota_manager(
     api_name: str,
     hourly_limit: Optional[int] = None,
@@ -373,13 +426,10 @@ def get_quota_manager(
     """
     with _quota_lock:
         if api_name not in _quota_managers:
-            # Use defaults based on API name
-            if api_name == "huggingface":
-                hourly_limit = hourly_limit or HUGGINGFACE_REQUESTS_PER_HOUR
-                daily_limit = daily_limit or HUGGINGFACE_REQUESTS_PER_DAY
-            else:
-                hourly_limit = hourly_limit or 1000
-                daily_limit = daily_limit or 10000
+            # Use provider-specific defaults
+            limits = PROVIDER_QUOTA_LIMITS.get(api_name, {})
+            hourly_limit = hourly_limit or limits.get("hourly", 1000)
+            daily_limit = daily_limit or limits.get("daily", 10000)
             
             _quota_managers[api_name] = QuotaManager(
                 api_name=api_name,
@@ -396,8 +446,93 @@ def get_all_quotas() -> Dict[str, QuotaUsage]:
         return {name: qm.usage for name, qm in _quota_managers.items()}
 
 
-# Pre-initialize HuggingFace quota
+def get_provider_with_quota() -> Optional[str]:
+    """
+    Get the first AI provider that has available quota.
+    
+    Returns:
+        Provider name with available quota, or None if all exhausted
+    """
+    # Priority order: groq > gemini > openrouter > deepseek > huggingface
+    priority = ["groq", "gemini", "openrouter", "deepseek", "huggingface"]
+    
+    for provider in priority:
+        quota = get_quota_manager(provider)
+        if quota.can_consume():
+            return provider
+    
+    return None
+
+
+def get_all_provider_quotas() -> Dict[str, Dict[str, Any]]:
+    """
+    Get quota status for all AI providers.
+    
+    Returns:
+        Dict mapping provider name to quota info
+    """
+    providers = ["groq", "gemini", "openrouter", "deepseek", "huggingface"]
+    result = {}
+    
+    for provider in providers:
+        quota = get_quota_manager(provider)
+        usage = quota.usage
+        result[provider] = {
+            "status": usage.status.value,
+            "is_available": usage.is_available,
+            "hourly_used": usage.hourly_used,
+            "hourly_limit": usage.hourly_limit,
+            "hourly_remaining": usage.hourly_remaining,
+            "daily_used": usage.daily_used,
+            "daily_limit": usage.daily_limit,
+            "daily_remaining": usage.daily_remaining,
+        }
+    
+    return result
+
+
+# =============================================================================
+# Pre-initialized Quota Managers for AI Providers
+# =============================================================================
+
+# Primary: Groq (fastest)
+groq_quota = get_quota_manager("groq")
+
+# Backup 1: Google Gemini
+gemini_quota = get_quota_manager("gemini")
+
+# Backup 2: OpenRouter
+openrouter_quota = get_quota_manager("openrouter")
+
+# Backup 3: DeepSeek
+deepseek_quota = get_quota_manager("deepseek")
+
+# Backup 4: HuggingFace (limited)
 huggingface_quota = get_quota_manager("huggingface")
 
 # OpenAI quota - zero limit (disabled)
 openai_quota = get_quota_manager("openai", hourly_limit=0, daily_limit=0)
+
+
+# Provider quota registry
+AI_PROVIDER_QUOTAS = {
+    "groq": groq_quota,
+    "gemini": gemini_quota,
+    "openrouter": openrouter_quota,
+    "deepseek": deepseek_quota,
+    "huggingface": huggingface_quota,
+    "openai": openai_quota,
+}
+
+
+def get_provider_quota(provider_name: str) -> QuotaManager:
+    """
+    Get quota manager for a specific AI provider.
+    
+    Args:
+        provider_name: Name of the provider
+        
+    Returns:
+        QuotaManager for the provider
+    """
+    return AI_PROVIDER_QUOTAS.get(provider_name, get_quota_manager(provider_name))

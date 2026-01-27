@@ -6,7 +6,7 @@ validated configuration management with environment variable support.
 """
 
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -58,20 +58,52 @@ class SpotifySettings(BaseSettings):
 
 
 class LLMSettings(BaseSettings):
-    """LLM/AI configuration"""
+    """LLM/AI configuration with multi-provider support (2026)"""
 
     model_config = SettingsConfigDict(extra="ignore")
 
-    openai_api_key: SecretStr | None = Field(
+    # Primary: Groq (fastest, FREE)
+    groq_api_key: Optional[SecretStr] = Field(
         default=None,
-        alias="OPENAI_API_KEY",
-        description="OpenAI API key for GPT models",
+        alias="GROQ_API_KEY",
+        description="Groq API key (FREE - fastest inference)",
     )
-    huggingface_token: SecretStr | None = Field(
+    
+    # Backup 1: Google Gemini (FREE - 1M context)
+    google_api_key: Optional[SecretStr] = Field(
+        default=None,
+        alias="GOOGLE_API_KEY",
+        description="Google API key for Gemini (FREE tier)",
+    )
+    
+    # Backup 2: OpenRouter (FREE models available)
+    openrouter_api_key: Optional[SecretStr] = Field(
+        default=None,
+        alias="OPENROUTER_API_KEY",
+        description="OpenRouter API key (FREE models)",
+    )
+    
+    # Backup 3: DeepSeek (FREE trial - 5M tokens)
+    deepseek_api_key: Optional[SecretStr] = Field(
+        default=None,
+        alias="DEEPSEEK_API_KEY",
+        description="DeepSeek API key (FREE trial)",
+    )
+    
+    # Backup 4: HuggingFace (limited FREE tier)
+    huggingface_token: Optional[SecretStr] = Field(
         default=None,
         alias="HUGGINGFACE_TOKEN",
-        description="HuggingFace API token for fallback models",
+        description="HuggingFace API token (limited FREE)",
     )
+    
+    # OpenAI (DISABLED by default - costs money)
+    openai_api_key: Optional[SecretStr] = Field(
+        default=None,
+        alias="OPENAI_API_KEY",
+        description="OpenAI API key (DISABLED - costs money)",
+    )
+    
     temperature: float = Field(
         default=0.7,
         ge=0.0,
@@ -80,10 +112,26 @@ class LLMSettings(BaseSettings):
         description="LLM creativity/randomness (0.0-2.0)",
     )
     default_model: str = Field(
-        default="gpt-3.5-turbo",
+        default="auto",
         alias="LLM_MODEL",
-        description="Default OpenAI model to use",
+        description="Default model: auto, groq, gemini, openrouter, deepseek, huggingface",
     )
+
+    @property
+    def has_groq(self) -> bool:
+        return bool(self.groq_api_key and self.groq_api_key.get_secret_value())
+
+    @property
+    def has_gemini(self) -> bool:
+        return bool(self.google_api_key and self.google_api_key.get_secret_value())
+
+    @property
+    def has_openrouter(self) -> bool:
+        return bool(self.openrouter_api_key and self.openrouter_api_key.get_secret_value())
+
+    @property
+    def has_deepseek(self) -> bool:
+        return bool(self.deepseek_api_key and self.deepseek_api_key.get_secret_value())
 
     @property
     def has_openai(self) -> bool:
@@ -95,7 +143,40 @@ class LLMSettings(BaseSettings):
 
     @property
     def has_any_llm(self) -> bool:
-        return self.has_openai or self.has_huggingface
+        """Check if any LLM provider is configured."""
+        return (
+            self.has_groq or 
+            self.has_gemini or 
+            self.has_openrouter or 
+            self.has_deepseek or 
+            self.has_huggingface or 
+            self.has_openai
+        )
+    
+    @property
+    def available_providers(self) -> list[str]:
+        """Get list of configured providers in priority order."""
+        providers = []
+        if self.has_groq:
+            providers.append("groq")
+        if self.has_gemini:
+            providers.append("gemini")
+        if self.has_openrouter:
+            providers.append("openrouter")
+        if self.has_deepseek:
+            providers.append("deepseek")
+        if self.has_huggingface:
+            providers.append("huggingface")
+        # OpenAI last (disabled by default)
+        if self.has_openai:
+            providers.append("openai")
+        return providers
+    
+    @property
+    def primary_provider(self) -> Optional[str]:
+        """Get the primary (first available) provider."""
+        providers = self.available_providers
+        return providers[0] if providers else None
 
 
 class RecommenderSettings(BaseSettings):
@@ -151,11 +232,11 @@ class SecuritySettings(BaseSettings):
         default=False,
         description="Require valid license to run",
     )
-    license_key: SecretStr | None = Field(
+    license_key: Optional[SecretStr] = Field(
         default=None,
         description="License key for validation",
     )
-    license_check_url: str | None = Field(
+    license_check_url: Optional[str] = Field(
         default=None,
         description="URL for license validation endpoint",
     )
@@ -163,7 +244,7 @@ class SecuritySettings(BaseSettings):
         default=False,
         description="Opt out of telemetry",
     )
-    telemetry_url: str | None = Field(
+    telemetry_url: Optional[str] = Field(
         default=None,
         description="Telemetry endpoint URL",
     )
@@ -228,8 +309,13 @@ class Settings(BaseSettings):
             missing.append("SPOTIFY_REDIRECT_URI (or SPOTIPY_REDIRECT_URI)")
 
         # Check LLM credentials (at least one required)
+        # 2026: Multiple FREE providers available
         if not self.llm.has_any_llm:
-            missing.append("OPENAI_API_KEY (or HUGGINGFACE_TOKEN for fallback)")
+            missing.append(
+                "At least one AI provider key required: "
+                "GROQ_API_KEY (recommended), GOOGLE_API_KEY, OPENROUTER_API_KEY, "
+                "DEEPSEEK_API_KEY, or HUGGINGFACE_TOKEN"
+            )
 
         return missing
 

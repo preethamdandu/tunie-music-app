@@ -347,11 +347,49 @@ def get_all_circuits() -> dict[str, CircuitBreaker]:
 
 
 # Pre-configured circuits for our APIs
+
+# =============================================================================
+# AI Provider Circuits (Multi-Provider Strategy 2026)
+# =============================================================================
+
+# Groq - Primary AI provider (fastest)
+groq_circuit = get_circuit(
+    "groq",
+    failure_threshold=3,
+    recovery_timeout=15,  # Groq is very reliable, quick recovery
+)
+
+# Google Gemini - Backup 1
+gemini_circuit = get_circuit(
+    "gemini",
+    failure_threshold=3,
+    recovery_timeout=20,
+)
+
+# OpenRouter - Backup 2
+openrouter_circuit = get_circuit(
+    "openrouter",
+    failure_threshold=3,
+    recovery_timeout=25,
+)
+
+# DeepSeek - Backup 3
+deepseek_circuit = get_circuit(
+    "deepseek",
+    failure_threshold=3,
+    recovery_timeout=30,
+)
+
+# HuggingFace - Backup 4 (last resort before rule-based)
 huggingface_circuit = get_circuit(
     "huggingface",
     failure_threshold=3,  # Lower threshold for external API
     recovery_timeout=30,
 )
+
+# =============================================================================
+# Other Service Circuits
+# =============================================================================
 
 spotify_circuit = get_circuit(
     "spotify",
@@ -368,6 +406,66 @@ _openai_circuit = get_circuit(
 # Force OpenAI circuit open
 _openai_circuit._state = CircuitState.OPEN
 _openai_circuit._opened_at = time.time()
+
+
+# =============================================================================
+# Provider Circuit Registry
+# =============================================================================
+
+AI_PROVIDER_CIRCUITS = {
+    "groq": groq_circuit,
+    "gemini": gemini_circuit,
+    "openrouter": openrouter_circuit,
+    "deepseek": deepseek_circuit,
+    "huggingface": huggingface_circuit,
+    "openai": _openai_circuit,
+}
+
+
+def get_provider_circuit(provider_name: str) -> CircuitBreaker:
+    """
+    Get circuit breaker for a specific AI provider.
+    
+    Args:
+        provider_name: Name of the provider (groq, gemini, etc.)
+        
+    Returns:
+        CircuitBreaker for the provider
+    """
+    return AI_PROVIDER_CIRCUITS.get(provider_name, get_circuit(provider_name))
+
+
+def get_healthy_providers() -> list[str]:
+    """
+    Get list of AI providers with closed (healthy) circuits.
+    
+    Returns:
+        List of provider names that are currently healthy
+    """
+    healthy = []
+    for name, circuit in AI_PROVIDER_CIRCUITS.items():
+        if name != "openai" and circuit.is_closed:
+            healthy.append(name)
+    return healthy
+
+
+def get_provider_circuit_stats() -> dict[str, dict]:
+    """
+    Get circuit breaker stats for all AI providers.
+    
+    Returns:
+        Dict mapping provider name to circuit stats
+    """
+    return {
+        name: {
+            "state": circuit.state.value,
+            "is_closed": circuit.is_closed,
+            "failure_rate": circuit.stats.failure_rate,
+            "total_calls": circuit.stats.total_calls,
+            "rejected_calls": circuit.stats.rejected_calls,
+        }
+        for name, circuit in AI_PROVIDER_CIRCUITS.items()
+    }
 
 
 def circuit_protected(circuit_name: str):

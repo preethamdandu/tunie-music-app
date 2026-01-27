@@ -21,7 +21,7 @@ def validate_environment():
     Validate presence of required secrets and configuration.
     - Accepts either SPOTIFY_* or SPOTIPY_* variable names for Spotify creds
     - Requires redirect URI
-    - Requires at least one LLM credential: OPENAI_API_KEY or HUGGINGFACE_TOKEN
+    - Requires at least one AI provider credential (2026 multi-provider support)
     Raises SystemExit with a clear message if anything critical is missing.
     """
     import os
@@ -38,11 +38,23 @@ def validate_environment():
     if not spotify_redirect_uri:
         missing.append('SPOTIFY_REDIRECT_URI (or SPOTIPY_REDIRECT_URI)')
 
-    # LLM credentials: require at least one
-    has_openai = bool(os.getenv('OPENAI_API_KEY'))
+    # AI Provider credentials: require at least one (2026 multi-provider support)
+    # Priority: Groq > Gemini > OpenRouter > DeepSeek > HuggingFace > OpenAI
+    has_groq = bool(os.getenv('GROQ_API_KEY'))
+    has_gemini = bool(os.getenv('GOOGLE_API_KEY'))
+    has_openrouter = bool(os.getenv('OPENROUTER_API_KEY'))
+    has_deepseek = bool(os.getenv('DEEPSEEK_API_KEY'))
     has_hf = bool(os.getenv('HUGGINGFACE_TOKEN'))
-    if not (has_openai or has_hf):
-        missing.append('OPENAI_API_KEY (or provide HUGGINGFACE_TOKEN for fallback)')
+    has_openai = bool(os.getenv('OPENAI_API_KEY'))
+    
+    has_any_ai = has_groq or has_gemini or has_openrouter or has_deepseek or has_hf or has_openai
+    
+    if not has_any_ai:
+        missing.append(
+            'At least one AI provider key required: '
+            'GROQ_API_KEY (recommended - fastest), GOOGLE_API_KEY, '
+            'OPENROUTER_API_KEY, DEEPSEEK_API_KEY, or HUGGINGFACE_TOKEN'
+        )
 
     if missing:
         details = '\n - ' + '\n - '.join(missing)
