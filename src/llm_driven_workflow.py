@@ -6,7 +6,7 @@ Alternative architecture where LLM understanding of mood drives candidate genera
 import os
 import json
 import logging
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
@@ -75,7 +75,7 @@ class LLMDrivenWorkflow:
     def execute_playlist_generation(self, mood: str, activity: str, 
                                    user_context: str = "", num_tracks: int = 20, 
                                    language_preference: str = "Any Language",
-                                   keywords: Optional[Dict] | str = None,
+                                   keywords = None,
                                    must_be_instrumental: bool = False,
                                    search_strictness: int = 1,
                                    taste_profile: Optional[Dict] = None) -> Dict:
@@ -181,7 +181,7 @@ class LLMDrivenWorkflow:
     
     def _generate_llm_search_strategy(self, mood: str, activity: str, 
                                      user_context: str, language_preference: str,
-                                     keywords: Optional[Dict] | str) -> Dict:
+                                     keywords: Union[Dict, str, None]) -> Dict:
         """
         Use LLM to analyze mood/context and generate a comprehensive search strategy
         
@@ -233,7 +233,7 @@ class LLMDrivenWorkflow:
             logger.error(f"Failed to generate LLM search strategy: {e}")
             return self._generate_fallback_strategy(mood, activity, keywords)
     
-    def _generate_fallback_strategy(self, mood: str, activity: str, keywords: Optional[Dict] | str) -> Dict:
+    def _generate_fallback_strategy(self, mood: str, activity: str, keywords: Union[Dict, str, None]) -> Dict:
         """Generate a fallback search strategy using heuristics"""
         
         # Mood to genre/feature mappings
@@ -658,7 +658,7 @@ class LLMDrivenWorkflow:
             logger.error(f"Failed to create Spotify playlist: {e}")
             return {'error': str(e)}
     
-    def _validate_playlist(self, keywords: Optional[Dict] | str, tracks: List[Dict]) -> Dict:
+    def _validate_playlist(self, keywords: Union[Dict, str, None], tracks: List[Dict]) -> Dict:
         """Validate the playlist against keywords"""
         try:
             if not keywords:

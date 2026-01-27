@@ -37,8 +37,8 @@ class SpotifyError(TuneGenieError):
     def __init__(
         self,
         message: str,
-        status_code: int | None = None,
-        retry_after: int | None = None,
+        status_code: Optional[int] = None,
+        retry_after: Optional[int] = None,
         details: dict[str, Any] | None = None,
     ):
         self.status_code = status_code
@@ -81,7 +81,7 @@ class SpotifyRateLimitError(SpotifyError):
     def __init__(
         self,
         message: str = "Spotify API rate limit exceeded",
-        retry_after: int | None = None,
+        retry_after: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(message, status_code=429, retry_after=retry_after, **kwargs)
@@ -146,7 +146,7 @@ class LLMRateLimitError(LLMError):
     def __init__(
         self,
         message: str = "LLM API rate limit exceeded",
-        retry_after: int | None = None,
+        retry_after: Optional[int] = None,
         **kwargs,
     ):
         self.retry_after = retry_after
@@ -249,8 +249,8 @@ class WorkflowExecutionError(WorkflowError):
     def __init__(
         self,
         message: str,
-        workflow_type: str | None = None,
-        step: str | None = None,
+        workflow_type: Optional[str] = None,
+        step: Optional[str] = None,
         **kwargs,
     ):
         details = kwargs.pop("details", {})
