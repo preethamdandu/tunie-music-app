@@ -1,0 +1,639 @@
+/* ============================================
+   TUNEGENIE PREMIUM CSS
+   World-Class UI Design System
+   ============================================ */
+
+/* ============================================
+   1. FONTS - Modern Typography
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Primary Colors - Spotify Inspired */
+  --primary: #1DB954;
+  --primary-dark: #169c46;
+  --primary-light: #1ed760;
+
+  /* Gradient Colors */
+  --gradient-start: #1DB954;
+  --gradient-end: #00D9FF;
+  --gradient-purple: #8B5CF6;
+  --gradient-pink: #EC4899;
+
+  /* Backgrounds */
+  --bg-dark: #0a0a0a;
+  --bg-card: rgba(25, 25, 35, 0.8);
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --bg-glass-hover: rgba(255, 255, 255, 0.08);
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+
+  /* Borders */
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(29, 185, 84, 0.5);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px rgba(29, 185, 84, 0.3);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* ============================================
+   2. GLOBAL STYLES
+   ============================================ */
+html,
+body,
+[data-testid="stAppViewContainer"] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ============================================
+   2.1 STREAMLIT CORE FIXES
+   Remove all white boxes and ensure dark theme
+   ============================================ */
+
+/* Main app container - remove any white backgrounds */
+.stApp {
+  background: transparent !important;
+}
+
+/* Header bar at the top - HIDE or style dark */
+header[data-testid="stHeader"] {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+/* The toolbar/button in header */
+[data-testid="stToolbar"] {
+  background: transparent !important;
+}
+
+/* Main block container - ensure dark background */
+.main .block-container {
+  background: transparent !important;
+  padding-top: 2rem !important;
+}
+
+/* Remove any stray white backgrounds from main content */
+.main,
+.main>div,
+[data-testid="stAppViewBlockContainer"],
+section[data-testid="stSidebar"]~div,
+section.main>div {
+  background: transparent !important;
+}
+
+/* App view container and descendants */
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"]>div,
+[data-testid="stAppViewContainer"]>div>div {
+  background: transparent !important;
+}
+
+/* Decoration - remove decorative elements that might show white */
+[data-testid="stDecoration"] {
+  display: none !important;
+}
+
+/* Status widget (top right corner) */
+[data-testid="stStatusWidget"] {
+  background: rgba(10, 10, 20, 0.9) !important;
+  border-radius: 8px !important;
+}
+
+/* Iframe container backgrounds */
+iframe {
+  background: transparent !important;
+}
+
+/* ============================================
+   3. SIDEBAR - Premium Navigation
+   ============================================ */
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 20, 1) 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  border-right: 1px solid var(--border-glass) !important;
+}
+
+/* Sidebar inner containers - all dark/transparent */
+[data-testid="stSidebar"]>div,
+[data-testid="stSidebar"]>div>div,
+[data-testid="stSidebar"]>div>div>div,
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"],
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stSidebarContent"],
+[data-testid="stSidebarNavContainer"] {
+  background: transparent !important;
+}
+
+/* Sidebar block container */
+[data-testid="stSidebar"] .block-container {
+  background: transparent !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdown"] {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Sidebar nav links */
+[data-testid="stSidebar"] .stRadio>label {
+  background: var(--bg-glass) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 12px 16px !important;
+  margin: 4px 0 !important;
+  border: 1px solid transparent !important;
+  transition: all var(--transition-normal) !important;
+}
+
+[data-testid="stSidebar"] .stRadio>label:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--border-glass) !important;
+  transform: translateX(4px) !important;
+}
+
+/* ============================================
+   3.1 STREAMLIT-OPTION-MENU FIXES
+   Force dark theme on all option menu elements
+   ============================================ */
+/* Main option menu container */
+.nav-link,
+.nav-link-selected,
+nav.nav {
+  background: transparent !important;
+}
+
+/* Menu title - the "Navigation" header */
+.menu-title {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Container that wraps the menu */
+.nav.flex-column,
+.nav-pills,
+div[data-baseweb="block"] {
+  background: transparent !important;
+}
+
+/* Any white backgrounds in sidebar */
+[data-testid="stSidebar"] * {
+  background-color: transparent;
+}
+
+/* Explicit sidebar inner divs */
+[data-testid="stSidebar"]>div:first-child {
+  background: linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 20, 1) 100%) !important;
+}
+
+/* ============================================
+   4. CARDS - Glassmorphism
+   ============================================ */
+
+/* Main container cards */
+[data-testid="stVerticalBlock"]>div>div[data-testid="column"] {
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 20px !important;
+  transition: all var(--transition-normal) !important;
+}
+
+[data-testid="stVerticalBlock"]>div>div[data-testid="column"]:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: rgba(29, 185, 84, 0.3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* Metric cards */
+[data-testid="stMetric"] {
+  background: linear-gradient(135deg, rgba(29, 185, 84, 0.1) 0%, rgba(0, 217, 255, 0.05) 100%) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 20px !important;
+  border: 1px solid rgba(29, 185, 84, 0.2) !important;
+  transition: all var(--transition-normal) !important;
+}
+
+[data-testid="stMetric"]:hover {
+  transform: scale(1.02) !important;
+  box-shadow: 0 0 20px rgba(29, 185, 84, 0.2) !important;
+}
+
+[data-testid="stMetric"] label {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em !important;
+}
+
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 2rem !important;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ============================================
+   5. BUTTONS - Gradient & Glow
+   ============================================ */
+.stButton>button {
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 12px 28px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 20px rgba(29, 185, 84, 0.4) !important;
+  transition: all var(--transition-normal) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.stButton>button:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 30px rgba(29, 185, 84, 0.5) !important;
+}
+
+.stButton>button:active {
+  transform: translateY(-1px) !important;
+}
+
+/* Button ripple effect */
+.stButton>button::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-radius: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  transition: width 0.6s, height 0.6s !important;
+}
+
+.stButton>button:active::after {
+  width: 300px !important;
+  height: 300px !important;
+}
+
+/* Secondary buttons */
+.stButton>button[kind="secondary"] {
+  background: transparent !important;
+  border: 2px solid var(--primary) !important;
+  color: var(--primary) !important;
+  box-shadow: none !important;
+}
+
+.stButton>button[kind="secondary"]:hover {
+  background: rgba(29, 185, 84, 0.1) !important;
+  box-shadow: 0 0 20px rgba(29, 185, 84, 0.2) !important;
+}
+
+/* ============================================
+   6. INPUTS - Premium Form Controls
+   ============================================ */
+.stTextInput>div>div>input,
+.stTextArea>div>div>textarea,
+.stSelectbox>div>div>div {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', sans-serif !important;
+  padding: 12px 16px !important;
+  transition: all var(--transition-normal) !important;
+}
+
+.stTextInput>div>div>input:focus,
+.stTextArea>div>div>textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2) !important;
+  outline: none !important;
+}
+
+/* Sliders */
+.stSlider>div>div>div>div {
+  background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end)) !important;
+}
+
+.stSlider>div>div>div>div>div {
+  background: white !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(29, 185, 84, 0.3) !important;
+}
+
+/* ============================================
+   7. TABS - Modern Navigation
+   ============================================ */
+.stTabs [data-baseweb="tab-list"] {
+  background: var(--bg-glass) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 4px !important;
+  gap: 4px !important;
+  border: 1px solid var(--border-glass) !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+  background: transparent !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-secondary) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+  transition: all var(--transition-normal) !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+  background: var(--bg-glass-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+.stTabs [aria-selected="true"] {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+  color: white !important;
+}
+
+/* ============================================
+   8. EXPANDERS - Accordion Style
+   ============================================ */
+.streamlit-expanderHeader {
+  background: var(--bg-glass) !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-glass) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  transition: all var(--transition-normal) !important;
+}
+
+.streamlit-expanderHeader:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--primary) !important;
+}
+
+/* ============================================
+   9. ALERTS & MESSAGES
+   ============================================ */
+.stSuccess {
+  background: linear-gradient(135deg, rgba(29, 185, 84, 0.15), rgba(29, 185, 84, 0.05)) !important;
+  border: 1px solid rgba(29, 185, 84, 0.3) !important;
+  border-radius: var(--radius-md) !important;
+  border-left: 4px solid var(--primary) !important;
+}
+
+.stInfo {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 217, 255, 0.05)) !important;
+  border: 1px solid rgba(0, 217, 255, 0.3) !important;
+  border-radius: var(--radius-md) !important;
+  border-left: 4px solid var(--gradient-end) !important;
+}
+
+.stWarning {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.05)) !important;
+  border: 1px solid rgba(255, 193, 7, 0.3) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.stError {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05)) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* ============================================
+   10. HEADER - Premium Branding
+   ============================================ */
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+h1 {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-size: 2.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+h2 {
+  color: var(--text-primary) !important;
+  font-size: 1.75rem !important;
+}
+
+h3 {
+  color: var(--text-secondary) !important;
+  font-size: 1.25rem !important;
+}
+
+/* ============================================
+   11. ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(29, 185, 84, 0.5);
+  }
+}
+
+/* Apply animations */
+[data-testid="stVerticalBlock"]>div {
+  animation: fadeInUp 0.5s ease-out !important;
+}
+
+/* ============================================
+   12. ACCESSIBILITY
+   ============================================ */
+/* Focus states for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   13. SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gradient-start), var(--gradient-end));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ============================================
+   14. SPECIAL COMPONENTS
+   ============================================ */
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: rgba(29, 185, 84, 0.2);
+  color: #1DB954;
+  border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.status-badge.warning {
+  background: rgba(255, 193, 7, 0.2);
+  color: #FFC107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Provider cards */
+.provider-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  transition: all var(--transition-normal);
+}
+
+.provider-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.provider-card.active {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(29, 185, 84, 0.1), rgba(0, 217, 255, 0.05));
+}
+
+/* ============================================
+   15. LOADING STATES
+   ============================================ */
+.stSpinner>div {
+  border-color: var(--primary) transparent transparent transparent !important;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-glass) 25%, var(--bg-glass-hover) 50%, var(--bg-glass) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}

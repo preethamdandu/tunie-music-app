@@ -23,17 +23,24 @@ logger = logging.getLogger(__name__)
 class LLMAgent:
     """LLM agent for contextual music recommendation enhancement"""
     
-    def __init__(self, model_name: str = "huggingface", temperature: float = 0.7):
+    def __init__(self, model_name: str = "auto", temperature: float = 0.7):
         """
-        Initialize the LLM agent
+        Initialize the LLM agent with multi-provider support.
         
         Args:
-            model_name: Model to use (huggingface only - openai disabled for cost protection)
+            model_name: Model/provider to use:
+                - "auto" (default): Uses MultiProviderAI with 5 free providers
+                - "huggingface": HuggingFace only
+                - "groq": Groq only (if available)
+                - "gemini": Google Gemini only (if available)
             temperature: Creativity level (0.0 to 1.0)
         
-        Note:
-            OpenAI is DISABLED by default to ensure $0 cost.
-            All AI features use HuggingFace's free tier.
+        Providers (all FREE, in priority order):
+            1. Groq - Ultra-fast (30 req/min)
+            2. Google Gemini - High quality (15 req/min)
+            3. OpenRouter - Flexible (unlimited/day)
+            4. DeepSeek - Best value (5M free tokens)
+            5. HuggingFace - Fallback (10 req/min)
         """
         self.model_name = model_name
         self.temperature = temperature
@@ -41,39 +48,39 @@ class LLMAgent:
         self.huggingface_token = os.getenv('HUGGINGFACE_TOKEN')
         
         # =========================================================
-        # FREE MODE: Always use HuggingFace to guarantee $0 cost
+        # MULTI-PROVIDER AI: 5 FREE providers with auto-fallback
         # =========================================================
-        # OpenAI is DISABLED - every API call costs money ($0.002+)
-        # HuggingFace free tier: 300 req/hr, 1000 req/day
+        self.multi_provider = None
+        self.available_providers = []
         
-        # Import free mode settings
         try:
-            from src.api_limits import FreeModeConfig, OPENAI_ENABLED
-            openai_enabled = OPENAI_ENABLED and FreeModeConfig.OPENAI_ENABLED
-        except ImportError:
-            openai_enabled = False  # Default to free mode
-        
-        if model_name != "huggingface" and self.api_key and openai_enabled:
-            # OpenAI explicitly enabled (user accepts costs)
-            self.model_type = "openai"
-            self._initialize_openai()
-            logger.warning("⚠️ OpenAI enabled - API calls will incur costs!")
-        else:
-            # FREE MODE (default)
+            from src.ai_providers import get_multi_provider_ai, MultiProviderAI
+            self.multi_provider = get_multi_provider_ai()
+            self.available_providers = self.multi_provider.get_available_providers()
+            
+            if self.available_providers:
+                self.model_type = "multi_provider"
+                logger.info(f"✅ MultiProviderAI initialized with {len(self.available_providers)} providers: {self.available_providers}")
+            else:
+                # No providers configured, fall back to HuggingFace
+                self.model_type = "huggingface"
+                self._initialize_huggingface()
+                logger.warning("⚠️ No AI providers configured, using HuggingFace as fallback")
+        except ImportError as e:
+            logger.warning(f"MultiProviderAI not available: {e}. Using HuggingFace fallback.")
             self.model_type = "huggingface"
             self._initialize_huggingface()
-            
-            if model_name != "huggingface" and self.api_key:
-                logger.info(
-                    "💰 OpenAI disabled for cost protection. "
-                    "Using HuggingFace free tier instead. "
-                    "To enable OpenAI, set OPENAI_ENABLED=True in api_limits.py"
-                )
+        except Exception as e:
+            logger.error(f"Error initializing MultiProviderAI: {e}")
+            self.model_type = "huggingface"
+            self._initialize_huggingface()
         
         # Load prompt templates
         self.prompts = self._load_prompts()
         
-        logger.info(f"Initialized LLM agent with {self.model_type} (FREE MODE: ${0})")
+        # Log cost status
+        logger.info(f"💰 LLM Agent initialized - Cost: $0.00 (all free providers)")
+        logger.info(f"📊 Active providers: {self.available_providers or ['huggingface']}")
 
     
     def _initialize_huggingface(self):
@@ -694,7 +701,10 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
             # Format conversation history for context
             history_context = self._format_conversation_history(conversation_history)
             
-            if self.model_type == "huggingface":
+            # Try multi-provider first (5 free providers with auto-fallback)
+            if self.model_type == "multi_provider" and self.multi_provider:
+                return self._get_multi_provider_insights(question, user_context, history_context)
+            elif self.model_type == "huggingface":
                 return self._get_huggingface_insights(question, user_context, history_context)
             else:
                 return self._get_openai_insights(question, user_context, history_context)
@@ -706,6 +716,48 @@ Format your response as JSON with keys: analysis, improvements, adjustments, lea
                 'question': question,
                 'timestamp': datetime.now().isoformat()
             }
+    
+    def _get_multi_provider_insights(self, question: str, user_context: str = "", history_context: str = "") -> Dict:
+        """Get insights using MultiProviderAI (5 free providers with auto-fallback)"""
+        try:
+            # Build the full context
+            full_context = ""
+            if history_context:
+                full_context += history_context + "\n"
+            if user_context:
+                full_context += f"User context: {user_context}\n"
+            
+            prompt = f"{full_context}Question: {question}"
+            
+            system_message = """You are TuneGenie's AI Music Expert. Provide helpful, conversational insights about music.
+Be knowledgeable but friendly. Reference specific artists, genres, and songs when relevant.
+Keep responses concise but informative."""
+            
+            # Use MultiProviderAI for generation (tries Groq -> Gemini -> OpenRouter -> DeepSeek -> HuggingFace)
+            response = self.multi_provider.generate(
+                prompt=prompt,
+                max_tokens=500,
+                temperature=self.temperature,
+                system_message=system_message
+            )
+            
+            if response:
+                return {
+                    'answer': response,
+                    'question': question,
+                    'timestamp': datetime.now().isoformat(),
+                    'provider': 'multi_provider',
+                    'providers_available': self.available_providers
+                }
+            else:
+                # Fallback to HuggingFace if all providers failed
+                logger.warning("All multi-providers failed, falling back to HuggingFace")
+                return self._get_huggingface_insights(question, user_context, history_context)
+                
+        except Exception as e:
+            logger.error(f"MultiProvider insights failed: {e}")
+            return self._get_huggingface_insights(question, user_context, history_context)
+
     
     def get_music_insights_stream(self, question: str, user_context: str = "", conversation_history: list = None):
         """

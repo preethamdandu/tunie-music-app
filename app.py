@@ -59,11 +59,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import TuneGenie components
 from src.workflow import MultiAgentWorkflow
 from src.intent_classifier import IntentClassifier
 from src.utils import DataProcessor, Visualizer, FileManager, MetricsCalculator
 from src.security import initialize_security
+
+# ============================================
+# UI CONFIGURATION CONSTANTS
+# ============================================
+UI_DEFAULTS = {
+    # Track Count Settings
+    'TRACK_COUNT_DEFAULT': 20,
+    'TRACK_COUNT_MIN_QUICK': 5,
+    'TRACK_COUNT_MAX_QUICK': 50,
+    'TRACK_COUNT_STEP_QUICK': 5,
+    'TRACK_COUNT_MIN_CUSTOM': 1,
+    'TRACK_COUNT_MAX_CUSTOM': 250,
+}
 
 # Page configuration
 st.set_page_config(
@@ -78,6 +90,93 @@ st.markdown("""
 <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    /* ============================================
+       CRITICAL DARK THEME FIXES
+       These override Streamlit's default light theme
+       ============================================ */
+    
+    /* NUCLEAR OPTION - Force all backgrounds dark */
+    html, body, 
+    html body .stApp,
+    html body [data-testid="stAppViewContainer"],
+    html body section.main,
+    html body .main,
+    html body .block-container,
+    #root, #root > div {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%) !important;
+        background-color: #0a0a0a !important;
+    }
+    
+    /* Remove any border/glow effects */
+    .stApp::before, .stApp::after,
+    [data-testid="stAppViewContainer"]::before, 
+    [data-testid="stAppViewContainer"]::after {
+        display: none !important;
+        content: none !important;
+    }
+    
+    /* Main app container - DARK background */
+    .stApp {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%) !important;
+    }
+
+    
+    /* Main content area - ALL containers */
+    .main, 
+    .main > div,
+    .block-container,
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stAppViewBlockContainer"],
+    .stMain,
+    section.main,
+    section.main > div,
+    .stApp > section {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    
+    /* Force main app view dark */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%) !important;
+    }
+    
+
+    /* Header bar - HIDE the glow/white bar at top */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Decoration element (the gradient bar at top) - HIDE */
+    [data-testid="stDecoration"] {
+        display: none !important;
+        background: none !important;
+    }
+    
+    /* Toolbar */
+    [data-testid="stToolbar"] {
+        background: transparent !important;
+    }
+    
+    /* Sidebar - DARK */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebar"] > div:first-child {
+        background: linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 20, 1) 100%) !important;
+    }
+    
+    /* OPTION MENU - Navigation box fix */
+    .menu-title, .menu-icon,
+    nav.nav, .nav-link,
+    [data-testid="stSidebar"] .stRadio,
+    [data-testid="stSidebar"] [data-baseweb] {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
     
     /* Global Styles */
     * {
@@ -96,6 +195,7 @@ st.markdown("""
         border-radius: 4px;
     }
     
+
     /* Main Header with Gradient */
     .main-header {
         font-size: 64px;
@@ -983,6 +1083,15 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 """, unsafe_allow_html=True)
 
+def load_premium_css():
+    """Load premium CSS from external file for world-class UI"""
+    import os
+    css_path = os.path.join(os.path.dirname(__file__), 'styles', 'premium.css')
+    if os.path.exists(css_path):
+        with open(css_path, 'r') as f:
+            premium_css = f.read()
+            st.markdown(f'<style>{premium_css}</style>', unsafe_allow_html=True)
+
 def check_workflow_ready():
     """Check if the workflow is ready to execute"""
     try:
@@ -1021,6 +1130,9 @@ def main():
     # Load environment variables
     load_dotenv()
     
+    # Load premium CSS for world-class UI
+    load_premium_css()
+    
     # Initialize security (telemetry + optional license enforcement)
     ok, message = initialize_security()
     if not ok:
@@ -1055,7 +1167,11 @@ def main():
             menu_icon="compass",
             default_index=default_idx,
             styles={
-                "container": {"padding": "0!important", "background-color": "transparent"},
+                "container": {
+                    "padding": "8px !important", 
+                    "background-color": "transparent !important",
+                    "border": "none !important"
+                },
                 "icon": {"color": "#1DB954", "font-size": "18px"},
                 "nav-link": {
                     "font-size": "15px",
@@ -1064,7 +1180,7 @@ def main():
                     "padding": "12px 16px",
                     "border-radius": "10px",
                     "color": "#e2e8f0",
-                    "background-color": "rgba(45, 55, 72, 0.5)",
+                    "background-color": "rgba(30, 35, 50, 0.6)",
                     "--hover-color": "rgba(29, 185, 84, 0.2)",
                 },
                 "nav-link-selected": {
@@ -1077,9 +1193,12 @@ def main():
                     "font-size": "18px",
                     "font-weight": "700",
                     "margin-bottom": "16px",
+                    "background-color": "transparent !important",
+                    "padding": "8px 16px",
                 }
             }
         )
+
         
         # Map back to full names with emojis for content routing
         selected_map = {
@@ -1140,7 +1259,7 @@ def show_dashboard():
         with col1:
             st.markdown("""
             <div class="metric-card">
-                <h3>Spotify Status</h3>
+                <h3>🎵 Spotify Status</h3>
                 <p><strong>Status:</strong> {}</p>
                 <p><strong>Authenticated:</strong> {}</p>
             </div>
@@ -1152,7 +1271,7 @@ def show_dashboard():
         with col2:
             st.markdown("""
             <div class="metric-card">
-                <h3>AI Model</h3>
+                <h3>🤖 AI Model</h3>
                 <p><strong>Algorithm:</strong> {}</p>
                 <p><strong>Trained:</strong> {}</p>
                 <p><strong>Model Files:</strong> {}</p>
@@ -1168,7 +1287,7 @@ def show_dashboard():
         with col3:
             st.markdown("""
             <div class="metric-card">
-                <h3>LLM Agent</h3>
+                <h3>💬 LLM Agent</h3>
                 <p><strong>Model:</strong> {}</p>
                 <p><strong>Status:</strong> ✅ Active</p>
             </div>
@@ -1179,7 +1298,7 @@ def show_dashboard():
         with col4:
             st.markdown("""
             <div class="metric-card">
-                <h3>Workflows</h3>
+                <h3>⚡ Workflows</h3>
                 <p><strong>Total:</strong> {}</p>
                 <p><strong>Recent:</strong> {}</p>
             </div>
@@ -1221,8 +1340,21 @@ def show_dashboard():
         if status['workflow_history']['recent_executions']:
             st.markdown("## 📋 Recent Activity")
             
+            # Workflow type icons mapping
+            workflow_icons = {
+                'playlist_generation': '🎵',
+                'user_analysis': '👤',
+                'ai_insights': '💬',
+                'recommendation': '🎯',
+                'default': '⚡'
+            }
+            
             for execution in status['workflow_history']['recent_executions'][-5:]:
-                with st.expander(f"{execution['workflow_type']} - {execution['start_time'][:19]}"):
+                wf_type = execution['workflow_type']
+                icon = workflow_icons.get(wf_type, workflow_icons['default'])
+                # Format timestamp nicely
+                timestamp = execution['start_time'][:19].replace('T', ' ')
+                with st.expander(f"{icon} {wf_type} - {timestamp}"):
                     st.json(execution)
         
     except Exception as e:
@@ -1245,23 +1377,26 @@ def show_playlist_generation():
         # CSS for form alignment and clean styling
         st.markdown("""
         <style>
-        /* Hide radio button circles in track count */
+        /* ===== TRACK COUNT TOGGLE STYLING ===== */
+        /* Hide radio button circles */
         .stRadio > div[role="radiogroup"] > label > div:first-child {
             display: none !important;
         }
-        /* Make radio group container transparent */
+        /* Make radio containers transparent */
         .stRadio, .stRadio > div {
             background: transparent !important;
         }
+        /* Radio button group layout */
         .stRadio > div[role="radiogroup"] {
             background: transparent !important;
             display: flex !important;
             flex-direction: row !important;
             gap: 8px !important;
         }
+        /* Individual toggle buttons - default state */
         .stRadio > div[role="radiogroup"] > label {
             background: rgba(45, 55, 72, 0.5) !important;
-            border: 1px solid rgba(29, 185, 84, 0.3) !important;
+            border: 1px solid rgba(100, 100, 100, 0.4) !important;
             border-radius: 10px !important;
             padding: 10px 16px !important;
             margin: 0 !important;
@@ -1270,14 +1405,18 @@ def show_playlist_generation():
             flex: 1 !important;
             text-align: center !important;
         }
+        /* Hover state */
         .stRadio > div[role="radiogroup"] > label:hover {
             border-color: #1DB954 !important;
-            background: rgba(29, 185, 84, 0.2) !important;
+            background: rgba(29, 185, 84, 0.15) !important;
         }
-        .stRadio > div[role="radiogroup"] > label[data-checked="true"],
-        .stRadio > div[role="radiogroup"] > label[data-baseweb="radio"]:has(input:checked) {
+        /* Active/Selected state - multiple selector approaches for compatibility */
+        .stRadio > div[role="radiogroup"] > label:has(input:checked),
+        .stRadio > div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"],
+        .stRadio > div[role="radiogroup"] label[aria-checked="true"] {
             background: rgba(29, 185, 84, 0.3) !important;
             border-color: #1DB954 !important;
+            box-shadow: 0 0 0 1px rgba(29, 185, 84, 0.2) !important;
         }
         /* Form section headers */
         .section-title {
@@ -1303,6 +1442,10 @@ def show_playlist_generation():
         st.markdown('<h2 class="sub-header">🎯 Generate Your Perfect Playlist</h2>', unsafe_allow_html=True)
         st.caption(strategy_banner)
         st.markdown('<p style="color: #a0aec0; margin-bottom: 24px;">Let TuneGenie create the perfect soundtrack for your mood, activity, and preferences</p>', unsafe_allow_html=True)
+        
+        # Initialize session state for track count method if not exists
+        if 'track_count_method' not in st.session_state:
+            st.session_state.track_count_method = "Quick Select"
         
         # Main Form Container
         with st.form("playlist_generation_form"):
@@ -1361,32 +1504,36 @@ def show_playlist_generation():
             with col3:
                 st.markdown('<p class="section-title">🎯 Track Count</p>', unsafe_allow_html=True)
                 
-                track_count_method = st.radio(
-                    "Method",
-                    ["Quick Select", "Custom"],
-                    key="track_method_radio",
-                    horizontal=True,
-                    label_visibility="collapsed"
-                )
+                # Use hidden number input to capture value since radio can't trigger form rerenders
+                # We'll use buttons styled as toggles outside the form idea, but simpler:
+                # Just show both options with proper styling based on session state
+                # Note: Radio inside form won't rerender until submit, so we use a workaround
                 
-                if track_count_method == "Quick Select":
+                # Display current mode selection info
+                current_method = st.session_state.track_count_method
+                st.caption(f"Mode: {current_method} (switch below form)")
+                
+                # Show appropriate input based on session state
+                if st.session_state.track_count_method == "Quick Select":
                     n_recommendations = st.slider(
                         "Tracks", 
-                        min_value=5, 
-                        max_value=50, 
-                        value=20, 
-                        step=5, 
-                        key="tracks_slider"
+                        min_value=UI_DEFAULTS['TRACK_COUNT_MIN_QUICK'], 
+                        max_value=UI_DEFAULTS['TRACK_COUNT_MAX_QUICK'], 
+                        value=UI_DEFAULTS['TRACK_COUNT_DEFAULT'], 
+                        step=UI_DEFAULTS['TRACK_COUNT_STEP_QUICK'], 
+                        key="tracks_slider",
+                        label_visibility="collapsed"
                     )
                 else:
                     n_recommendations = st.number_input(
-                        "Tracks", 
-                        min_value=1, 
-                        max_value=250, 
-                        value=20, 
+                        "Custom Tracks", 
+                        min_value=UI_DEFAULTS['TRACK_COUNT_MIN_CUSTOM'], 
+                        max_value=UI_DEFAULTS['TRACK_COUNT_MAX_CUSTOM'], 
+                        value=UI_DEFAULTS['TRACK_COUNT_DEFAULT'], 
                         step=1, 
                         key="tracks_custom_input",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
+                        help=f"Enter any number from {UI_DEFAULTS['TRACK_COUNT_MIN_CUSTOM']} to {UI_DEFAULTS['TRACK_COUNT_MAX_CUSTOM']}"
                     )
             
             # Summary row
@@ -1418,6 +1565,53 @@ def show_playlist_generation():
                 "🚀 Generate My Perfect Playlist",
                 type="primary"
             )
+        
+        # Track count mode toggle (outside form for dynamic switching)
+        st.markdown("---")
+        st.markdown("**🎯 Switch Track Count Mode:**")
+        
+        # CSS for consistent toggle button sizing
+        st.markdown("""
+        <style>
+        /* ===== TOGGLE BUTTON SIZING FIX ===== */
+        /* Target the toggle button columns specifically */
+        [data-testid="column"]:has(button[kind="secondary"]) button,
+        [data-testid="column"]:has(button[kind="primary"]) button {
+            min-height: 48px !important;
+            height: 48px !important;
+            max-height: 48px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 16px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        toggle_col1, toggle_col2, toggle_col3 = st.columns([1, 1, 2])
+        with toggle_col1:
+            if st.button(
+                f"🎚️ Slider ({UI_DEFAULTS['TRACK_COUNT_MIN_QUICK']}-{UI_DEFAULTS['TRACK_COUNT_MAX_QUICK']})",
+                key="quick_select_btn",
+                type="secondary" if st.session_state.track_count_method == "Custom" else "primary",
+                use_container_width=True
+            ):
+                st.session_state.track_count_method = "Quick Select"
+                st.rerun()
+        with toggle_col2:
+            if st.button(
+                f"✏️ Custom ({UI_DEFAULTS['TRACK_COUNT_MIN_CUSTOM']}-{UI_DEFAULTS['TRACK_COUNT_MAX_CUSTOM']})",
+                key="custom_btn", 
+                type="secondary" if st.session_state.track_count_method == "Quick Select" else "primary",
+                use_container_width=True
+            ):
+                st.session_state.track_count_method = "Custom"
+                st.rerun()
+        with toggle_col3:
+            st.caption(f"Current mode: **{st.session_state.track_count_method}**")
         
         # Results and feedback section (outside the form)
         if submit_button:
@@ -1585,7 +1779,31 @@ def show_user_analysis():
             st.markdown("Get insights into your listening habits, favorite genres, and music preferences.")
         
         with col2:
-            if st.button("🔍 Run Analysis"):
+            run_analysis = st.button("🔍 Run Analysis")
+        
+        # Check if analysis has been run before (show empty state if not)
+        if 'user_analysis_results' not in st.session_state and not run_analysis:
+            # Empty state placeholder
+            st.markdown("---")
+            empty_col1, empty_col2, empty_col3 = st.columns([1, 2, 1])
+            with empty_col2:
+                st.markdown("""
+                <div style="text-align: center; padding: 60px 20px; background: rgba(29, 185, 84, 0.05); border-radius: 16px; border: 1px dashed rgba(29, 185, 84, 0.3);">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                    <h3 style="color: #1DB954; margin-bottom: 12px;">No Analysis Data Yet</h3>
+                    <p style="color: #888; margin-bottom: 20px;">Click <strong>"Run Analysis"</strong> above to generate insights from your listening history.</p>
+                    <p style="color: #666; font-size: 0.9rem;">We'll analyze your:</p>
+                    <ul style="color: #888; text-align: left; display: inline-block; margin-top: 8px;">
+                        <li>🎭 Top genres and artists</li>
+                        <li>📈 Listening patterns</li>
+                        <li>🎵 Audio feature preferences</li>
+                        <li>⏱️ Activity by time of day</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+            return
+        
+        if run_analysis:
                 with st.spinner("📊 Analyzing your music profile..."):
                     try:
                         # Execute user analysis workflow
@@ -1926,19 +2144,12 @@ def show_settings():
                     st.success("✅ Connected")
                 else:
                     st.error("❌ Not connected")
-                
-                st.markdown("**OpenAI API**")
-                if llm_status.get('model_name', 'N/A') != 'N/A':
-                    st.success("✅ Configured")
-                else:
-                    st.error("❌ Not configured")
             
             with col2:
                 st.markdown("**Environment Variables**")
                 env_vars = {
                     'SPOTIFY_CLIENT_ID': os.getenv('SPOTIFY_CLIENT_ID'),
                     'SPOTIFY_CLIENT_SECRET': os.getenv('SPOTIFY_CLIENT_SECRET'),
-                    'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY')
                 }
                 
                 for var, value in env_vars.items():
@@ -1947,7 +2158,99 @@ def show_settings():
                     else:
                         st.error(f"❌ {var}")
             
-            st.info("💡 To configure APIs, create a `.env` file with your credentials. See `env.example` for reference.")
+            # ============================================
+            # AI PROVIDERS STATUS (5 FREE providers)
+            # ============================================
+            st.markdown("---")
+            st.markdown("### 🤖 AI Providers (All FREE)")
+            st.markdown("*TuneGenie uses 5 free AI providers with automatic fallback for $0 cost*")
+            
+            # Define AI providers and their status
+            ai_providers = [
+                {
+                    'name': 'Groq',
+                    'env_key': 'GROQ_API_KEY',
+                    'speed': '⚡ Ultra-fast',
+                    'limit': '30/min, 14,400/day',
+                    'priority': 1
+                },
+                {
+                    'name': 'Google Gemini',
+                    'env_key': 'GOOGLE_API_KEY',
+                    'speed': '🚀 Fast',
+                    'limit': '15/min, 1,500/day',
+                    'priority': 2
+                },
+                {
+                    'name': 'OpenRouter',
+                    'env_key': 'OPENROUTER_API_KEY',
+                    'speed': '🚀 Fast',
+                    'limit': '20/min, Unlimited/day',
+                    'priority': 3
+                },
+                {
+                    'name': 'DeepSeek',
+                    'env_key': 'DEEPSEEK_API_KEY',
+                    'speed': '🚀 Fast',
+                    'limit': '5M free tokens',
+                    'priority': 4
+                },
+                {
+                    'name': 'HuggingFace',
+                    'env_key': 'HUGGINGFACE_TOKEN',
+                    'speed': '🐢 Slow',
+                    'limit': '10/min, 1,000/day',
+                    'priority': 5
+                }
+            ]
+            
+            # Create columns for provider cards
+            col1, col2, col3 = st.columns(3)
+            cols = [col1, col2, col3]
+            
+            configured_count = 0
+            for i, provider in enumerate(ai_providers):
+                with cols[i % 3]:
+                    key_value = os.getenv(provider['env_key'])
+                    is_configured = bool(key_value)
+                    if is_configured:
+                        configured_count += 1
+                    
+                    status_icon = "✅" if is_configured else "❌"
+                    status_color = "green" if is_configured else "red"
+                    
+                    st.markdown(f"""
+                    <div style="border: 1px solid {status_color}; border-radius: 8px; padding: 10px; margin: 5px 0;">
+                        <strong>{status_icon} {provider['name']}</strong><br>
+                        <small>Priority: #{provider['priority']}</small><br>
+                        <small>{provider['speed']}</small><br>
+                        <small>Limit: {provider['limit']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Summary card
+            st.markdown("---")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Providers Configured", f"{configured_count}/5")
+            with col2:
+                st.metric("Monthly Cost", "$0.00")
+            with col3:
+                daily_capacity = 0
+                if os.getenv('GROQ_API_KEY'):
+                    daily_capacity += 14400
+                if os.getenv('GOOGLE_API_KEY'):
+                    daily_capacity += 1500
+                if os.getenv('OPENROUTER_API_KEY'):
+                    daily_capacity += 10000  # Conservative estimate
+                if os.getenv('DEEPSEEK_API_KEY'):
+                    daily_capacity += 5000
+                if os.getenv('HUGGINGFACE_TOKEN'):
+                    daily_capacity += 1000
+                st.metric("Daily Capacity", f"~{daily_capacity:,} req")
+            
+            st.info("💡 All API keys are configured in `.env`. Priority order: Groq → Gemini → OpenRouter → DeepSeek → HuggingFace")
+
         
         with tab2:
             st.markdown("### 🤖 Model Settings")
@@ -2072,11 +2375,13 @@ def show_performance():
             # Calculate metrics
             metrics = MetricsCalculator.calculate_performance_metrics(workflow_history)
             
-            # Display metrics
+            # Display metrics - use total_executions from status (same as Dashboard)
+            total_executions = status['workflow_history'].get('total_executions', len(workflow_history))
+            
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.metric("Total Executions", metrics.get('total_executions', 0))
+                st.metric("Total Executions", total_executions)
             
             with col2:
                 st.metric("Success Rate", f"{metrics.get('success_rate', 0):.1%}")
@@ -2097,7 +2402,42 @@ def show_performance():
                 ])
                 
                 if not workflow_df.empty:
-                    st.bar_chart(workflow_df.set_index('Workflow'))
+                    # Use Plotly for better label control and styling
+                    fig = go.Figure(data=[
+                        go.Bar(
+                            x=workflow_df['Workflow'],
+                            y=workflow_df['Count'],
+                            marker=dict(
+                                color=workflow_df['Count'],
+                                colorscale=[[0, '#1DB954'], [1, '#00D9FF']],
+                                line=dict(color='rgba(29, 185, 84, 0.8)', width=1)
+                            ),
+                            text=workflow_df['Count'],
+                            textposition='auto',
+                            hovertemplate='<b>%{x}</b><br>Count: %{y}<extra></extra>'
+                        )
+                    ])
+                    fig.update_layout(
+                        title=dict(text=''),  # Empty title to prevent undefined
+                        showlegend=False,
+                        xaxis_title="Workflow Type",
+                        yaxis_title="Execution Count",
+                        xaxis_tickangle=-45,  # Rotate labels to prevent clipping
+                        margin=dict(b=120, t=10, l=60, r=20),  # Reduced top margin
+                        height=400,
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='white'),
+                        xaxis=dict(
+                            tickfont=dict(size=11),
+                            gridcolor='rgba(255,255,255,0.1)'
+                        ),
+                        yaxis=dict(
+                            gridcolor='rgba(255,255,255,0.1)'
+                        )
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
             
             # Performance visualization
             st.markdown("### 📈 Performance Charts")
@@ -2121,15 +2461,35 @@ def show_performance():
                                 continue
                     
                     if execution_times:
-                        # Create histogram of execution times
-                        fig = go.Figure(data=[go.Histogram(x=execution_times, nbinsx=10)])
+                        # Create histogram of execution times with dark theme
+                        fig = go.Figure(data=[go.Histogram(
+                            x=execution_times, 
+                            nbinsx=10,
+                            marker=dict(
+                                color='rgba(0, 217, 255, 0.7)',
+                                line=dict(color='rgba(29, 185, 84, 0.8)', width=1)
+                            )
+                        )])
                         fig.update_layout(
-                            title="Workflow Execution Time Distribution",
+                            title=dict(text=''),  # Empty title to prevent undefined
+                            showlegend=False,
                             xaxis_title="Execution Time (seconds)",
                             yaxis_title="Frequency",
-                            height=400
+                            height=400,
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color='white'),
+                            xaxis=dict(
+                                gridcolor='rgba(255,255,255,0.1)',
+                                tickfont=dict(color='white')
+                            ),
+                            yaxis=dict(
+                                gridcolor='rgba(255,255,255,0.1)',
+                                tickfont=dict(color='white')
+                            ),
+                            margin=dict(t=10, b=60, l=60, r=20)
                         )
-                        st.plotly_chart(fig)
+                        st.plotly_chart(fig, use_container_width=True)
                     else:
                         st.info("No execution time data available for visualization")
                 else:
