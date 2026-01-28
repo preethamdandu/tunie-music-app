@@ -1958,8 +1958,18 @@ def show_ai_insights():
                     
                     # Get user context for personalized responses
                     user_context = ""
+                    user_context_dict = {}
+                    user_id = "anonymous"
                     try:
                         user_context = workflow.get_user_context_for_ai()
+                        # Get user ID and context dict for enhanced insights
+                        user_profile = workflow.spotify_client.get_user_profile()
+                        user_id = user_profile.get('id', 'anonymous')
+                        user_context_dict = {
+                            'top_artists': workflow.spotify_client.get_user_top_artists(20) if hasattr(workflow.spotify_client, 'get_user_top_artists') else [],
+                            'top_tracks': workflow.spotify_client.get_user_top_tracks(20) if hasattr(workflow.spotify_client, 'get_user_top_tracks') else [],
+                            'profile': user_profile
+                        }
                     except Exception as e:
                         # Continue without personalization if it fails
                         pass
@@ -1967,27 +1977,117 @@ def show_ai_insights():
                     # Display response header
                     st.markdown("### 💡 AI Response")
                     
-                    # Initialize response text and model info
-                    full_response_text = ""
-                    model_used = "Unknown"
+                    # =========================================================
+                    # TRY ENHANCED INSIGHTS FIRST (with reasoning & memory)
+                    # =========================================================
+                    enhanced_result = None
+                    reasoning_steps = []
+                    confidence = 0.7
+                    sources = []
+                    memory_stats = None
                     
-                    # Create placeholder for streaming response
-                    response_placeholder = st.empty()
-                    
-                    # Stream the response
                     try:
-                        # Get streaming generator
-                        stream_generator = workflow.llm_agent.get_music_insights_stream(
-                            question=user_query,
-                            user_context=user_context,
-                            conversation_history=chat_history
-                        )
+                        # Check if enhanced method is available
+                        if hasattr(workflow.llm_agent, 'get_music_insights_enhanced') and workflow.llm_agent.enhanced_enabled:
+                            enhanced_result = workflow.llm_agent.get_music_insights_enhanced(
+                                question=user_query,
+                                user_id=user_id,
+                                context=user_context_dict,
+                                spotify_client=workflow.spotify_client,
+                                show_reasoning=True
+                            )
+                            
+                            if enhanced_result and 'response' in enhanced_result:
+                                full_response_text = enhanced_result.get('response', '')
+                                reasoning_steps = enhanced_result.get('reasoning_steps', [])
+                                confidence = enhanced_result.get('confidence', 0.7)
+                                sources = enhanced_result.get('sources', [])
+                                memory_stats = enhanced_result.get('memory_stats')
+                                
+                                # Determine model attribution
+                                if enhanced_result.get('enhanced'):
+                                    model_used = "TuneGenie AI (Enhanced)"
+                                else:
+                                    model_used = "TuneGenie AI"
+                    except Exception as enhanced_error:
+                        logger.warning(f"Enhanced insights failed, falling back to standard: {enhanced_error}")
+                        enhanced_result = None
+                    
+                    # =========================================================
+                    # DISPLAY ENHANCED RESPONSE IF AVAILABLE
+                    # =========================================================
+                    if enhanced_result and enhanced_result.get('response'):
+                        # Display the main response with premium styling
+                        st.markdown(f"""
+                        <div style="
+                            background: linear-gradient(135deg, rgba(45, 55, 72, 0.9), rgba(74, 85, 104, 0.9));
+                            border: 1px solid rgba(29, 185, 84, 0.4);
+                            border-radius: 15px;
+                            padding: 24px;
+                            margin: 16px 0;
+                            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                        ">
+                            <p style="color: #ffffff; line-height: 1.8; margin: 0; font-size: 1.05rem;">{full_response_text}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        # Determine model type for attribution
-                        if workflow.llm_agent.model_type == "openai":
-                            model_used = f"OpenAI ({workflow.llm_agent.model_name})"
-                        else:
-                            model_used = "Hugging Face (Free)"
+                        # Display confidence and model info
+                        info_cols = st.columns([2, 2, 2])
+                        with info_cols[0]:
+                            st.caption(f"🤖 Generated by {model_used}")
+                        with info_cols[1]:
+                            confidence_color = "#1DB954" if confidence >= 0.7 else "#FFD700" if confidence >= 0.4 else "#FF6B6B"
+                            st.caption(f"🎯 Confidence: <span style='color:{confidence_color}'>{confidence:.0%}</span>", unsafe_allow_html=True)
+                        with info_cols[2]:
+                            if sources:
+                                st.caption(f"📚 Sources: {', '.join(sources[:3])}")
+                        
+                        # Display reasoning steps (collapsible)
+                        if reasoning_steps:
+                            with st.expander("🧠 View Reasoning Steps", expanded=False):
+                                for i, step in enumerate(reasoning_steps, 1):
+                                    st.markdown(f"""
+                                    <div style="
+                                        background: rgba(29, 185, 84, 0.1);
+                                        border-left: 3px solid #1DB954;
+                                        padding: 10px 15px;
+                                        margin: 8px 0;
+                                        border-radius: 0 8px 8px 0;
+                                    ">
+                                        <strong>Step {i}:</strong> {step}
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                        
+                        # Display memory stats (collapsible)
+                        if memory_stats:
+                            with st.expander("💾 Memory Stats", expanded=False):
+                                st.json(memory_stats)
+                    
+                    # =========================================================
+                    # FALLBACK TO STANDARD STREAMING IF ENHANCED FAILED
+                    # =========================================================
+                    elif enhanced_result is None or not enhanced_result.get('response'):
+                        # Initialize response text and model info
+                        full_response_text = ""
+                        model_used = "Unknown"
+                        
+                        # Create placeholder for streaming response
+                        response_placeholder = st.empty()
+                        
+                        # Stream the response
+                        try:
+                            # Get streaming generator
+                            stream_generator = workflow.llm_agent.get_music_insights_stream(
+                                question=user_query,
+                                user_context=user_context,
+                                conversation_history=chat_history
+                            )
+                            
+                            # Determine model type for attribution
+                            if workflow.llm_agent.model_type == "openai":
+                                model_used = f"OpenAI ({workflow.llm_agent.model_name})"
+                            else:
+                                model_used = "Hugging Face (Free)"
                         
                         # Stream and display chunks in real-time
                         for chunk in stream_generator:

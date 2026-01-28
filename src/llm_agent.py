@@ -20,6 +20,20 @@ import requests
 # Load environment and logging in app.py (entrypoint)
 logger = logging.getLogger(__name__)
 
+# =========================================================
+# ENHANCED AI INSIGHTS IMPORTS
+# =========================================================
+try:
+    from src.reasoning_engine import ReasoningEngine
+    from src.music_toolkit import MusicToolkit
+    from src.memory_system import MemorySystem
+    from src.security_utils import SecurityUtils, InputValidator
+    ENHANCED_INSIGHTS_AVAILABLE = True
+    logger.info("✅ Enhanced AI Insights modules loaded")
+except ImportError as e:
+    ENHANCED_INSIGHTS_AVAILABLE = False
+    logger.warning(f"⚠️ Enhanced AI Insights modules not available: {e}")
+
 class LLMAgent:
     """LLM agent for contextual music recommendation enhancement"""
     
@@ -81,6 +95,20 @@ class LLMAgent:
         # Log cost status
         logger.info(f"💰 LLM Agent initialized - Cost: $0.00 (all free providers)")
         logger.info(f"📊 Active providers: {self.available_providers or ['huggingface']}")
+        
+        # =========================================================
+        # ENHANCED AI INSIGHTS: Reasoning, Memory, Tools, Security
+        # =========================================================
+        self.reasoning_engine = None  # Lazy initialization
+        self.toolkit = None  # Lazy initialization
+        self.memory_systems = {}  # Per-user memory systems
+        self.enhanced_enabled = os.getenv('AI_INSIGHTS_ENHANCED_ENABLED', 'true').lower() == 'true'
+        self.show_reasoning = os.getenv('AI_INSIGHTS_SHOW_REASONING', 'true').lower() == 'true'
+        
+        if ENHANCED_INSIGHTS_AVAILABLE and self.enhanced_enabled:
+            logger.info("🧠 Enhanced AI Insights enabled (reasoning, memory, tools, security)")
+        else:
+            logger.info("📝 Using standard AI Insights mode")
 
     
     def _initialize_huggingface(self):
@@ -1542,3 +1570,249 @@ Keep responses concise but informative."""
                 'selected_tracks': available_tracks[:num_tracks],
                 'tracks': available_tracks[:num_tracks]
             }
+    
+    # =========================================================
+    # ENHANCED AI INSIGHTS METHODS
+    # =========================================================
+    
+    def _init_enhanced_features(self, spotify_client=None):
+        """
+        Lazy initialize enhanced AI Insights features.
+        
+        Args:
+            spotify_client: Spotify client for toolkit operations
+        """
+        if not ENHANCED_INSIGHTS_AVAILABLE:
+            return
+        
+        try:
+            # Initialize ReasoningEngine
+            if self.reasoning_engine is None:
+                self.reasoning_engine = ReasoningEngine(self, spotify_client)
+                logger.info("🧠 ReasoningEngine initialized")
+            
+            # Initialize MusicToolkit
+            if self.toolkit is None and spotify_client:
+                self.toolkit = MusicToolkit(spotify_client, self)
+                logger.info("🔧 MusicToolkit initialized with Spotify client")
+        except Exception as e:
+            logger.error(f"Failed to initialize enhanced features: {e}")
+    
+    def _get_user_memory(self, user_id: str) -> 'MemorySystem':
+        """
+        Get or create a MemorySystem for a user.
+        
+        Args:
+            user_id: Unique user identifier
+            
+        Returns:
+            MemorySystem instance for the user
+        """
+        if not ENHANCED_INSIGHTS_AVAILABLE:
+            return None
+        
+        if user_id not in self.memory_systems:
+            try:
+                self.memory_systems[user_id] = MemorySystem(user_id)
+                logger.info(f"🧠 Created MemorySystem for user: {user_id[:8]}...")
+            except Exception as e:
+                logger.error(f"Failed to create MemorySystem: {e}")
+                return None
+        
+        return self.memory_systems[user_id]
+    
+    def get_music_insights_enhanced(
+        self,
+        question: str,
+        user_id: str = "anonymous",
+        context: Dict = None,
+        spotify_client=None,
+        show_reasoning: bool = True
+    ) -> Dict:
+        """
+        Get AI-powered music insights with enhanced reasoning, memory, and security.
+        
+        This method provides advanced capabilities:
+        - Chain-of-thought reasoning with 5 specialized modes
+        - Multi-tier memory (short-term, long-term, semantic)
+        - Security validation and sanitization
+        - Confidence scoring and source attribution
+        
+        Args:
+            question: User's question about music
+            user_id: Unique user identifier for memory
+            context: User context (top_artists, top_tracks, profile, etc.)
+            spotify_client: Spotify client for real-time data access
+            show_reasoning: Whether to include reasoning steps in response
+            
+        Returns:
+            Dict containing:
+              - response: AI-generated answer
+              - reasoning_steps: List of reasoning steps (if show_reasoning=True)
+              - confidence: Confidence score (0-1)
+              - sources: Data sources used
+              - memory_stats: Memory system statistics
+        """
+        context = context or {}
+        
+        # =========================================================
+        # STEP 1: Security validation
+        # =========================================================
+        if ENHANCED_INSIGHTS_AVAILABLE:
+            try:
+                # Validate input
+                is_valid, error = InputValidator.validate_question(question)
+                if not is_valid:
+                    logger.warning(f"Input validation failed: {error}")
+                    return {
+                        'response': f"I couldn't process that question. {error}",
+                        'reasoning_steps': [],
+                        'confidence': 0.0,
+                        'sources': [],
+                        'error': error
+                    }
+                
+                # Check for malicious intent
+                is_malicious, attack_type = SecurityUtils.detect_malicious_intent(question)
+                if is_malicious:
+                    logger.warning(f"Malicious input detected: {attack_type}")
+                    return {
+                        'response': "I'd love to help you with music questions! Please ask something about songs, artists, genres, or recommendations.",
+                        'reasoning_steps': [],
+                        'confidence': 1.0,
+                        'sources': ['security'],
+                        'blocked': True,
+                        'reason': 'input_validation'
+                    }
+                
+                # Sanitize input
+                question = SecurityUtils.validate_input(question)
+            except Exception as e:
+                logger.error(f"Security validation error: {e}")
+                # Continue with unsanitized input if validation fails
+        
+        # =========================================================
+        # STEP 2: Initialize enhanced features
+        # =========================================================
+        if ENHANCED_INSIGHTS_AVAILABLE and self.enhanced_enabled:
+            self._init_enhanced_features(spotify_client)
+        
+        # =========================================================
+        # STEP 3: Memory operations
+        # =========================================================
+        memory = None
+        conversation_history = []
+        
+        if ENHANCED_INSIGHTS_AVAILABLE and self.enhanced_enabled:
+            memory = self._get_user_memory(user_id)
+            
+            if memory:
+                try:
+                    # Add question to short-term memory
+                    memory.short_term.add('user', question)
+                    
+                    # Get conversation history for context
+                    conversation_history = [
+                        {'role': msg['role'], 'content': msg['content']}
+                        for msg in memory.short_term.get_recent(5)
+                    ]
+                except Exception as e:
+                    logger.error(f"Memory operation failed: {e}")
+        
+        # =========================================================
+        # STEP 4: Reasoning Engine (if available)
+        # =========================================================
+        result = None
+        
+        if ENHANCED_INSIGHTS_AVAILABLE and self.enhanced_enabled and self.reasoning_engine:
+            try:
+                result = self.reasoning_engine.reason_about_query(
+                    query=question,
+                    context=context,
+                    show_reasoning=show_reasoning and self.show_reasoning
+                )
+                
+                # Format the result
+                if result:
+                    result = {
+                        'response': result.get('response', 'No response generated'),
+                        'reasoning_steps': result.get('reasoning_steps', []),
+                        'confidence': result.get('confidence', 0.7),
+                        'sources': result.get('sources', ['reasoning_engine']),
+                        'reasoning_type': result.get('reasoning_type', 'general')
+                    }
+            except Exception as e:
+                logger.error(f"ReasoningEngine failed: {e}")
+                result = None
+        
+        # =========================================================
+        # STEP 5: Fallback to standard insights
+        # =========================================================
+        if result is None:
+            try:
+                # Use standard get_music_insights method
+                standard_result = self.get_music_insights(
+                    question=question,
+                    user_context=str(context),
+                    conversation_history=conversation_history
+                )
+                
+                result = {
+                    'response': standard_result.get('answer', standard_result.get('insight', 'No response')),
+                    'reasoning_steps': [],
+                    'confidence': 0.7,
+                    'sources': ['llm'],
+                    'reasoning_type': 'standard'
+                }
+            except Exception as e:
+                logger.error(f"Standard insights failed: {e}")
+                result = {
+                    'response': f"I encountered an issue processing your question: {str(e)}",
+                    'reasoning_steps': [],
+                    'confidence': 0.0,
+                    'sources': [],
+                    'error': str(e)
+                }
+        
+        # =========================================================
+        # STEP 6: Update memory with response
+        # =========================================================
+        if memory:
+            try:
+                # Add response to short-term memory
+                memory.short_term.add('assistant', result['response'])
+                
+                # Record interaction in long-term memory
+                memory.long_term.add_interaction(
+                    interaction_type='ai_insights_query',
+                    details={
+                        'query': question[:100],  # Truncate for storage
+                        'response_length': len(result['response']),
+                        'confidence': result.get('confidence', 0),
+                        'reasoning_type': result.get('reasoning_type', 'standard')
+                    }
+                )
+                
+                # Add memory stats to result
+                result['memory_stats'] = memory.get_context_summary()
+            except Exception as e:
+                logger.error(f"Memory update failed: {e}")
+        
+        # =========================================================
+        # STEP 7: Output sanitization
+        # =========================================================
+        if ENHANCED_INSIGHTS_AVAILABLE and result.get('response'):
+            try:
+                result['response'] = SecurityUtils.sanitize_output(
+                    result['response'],
+                    escape_html=False  # Don't escape for Streamlit markdown
+                )
+            except Exception as e:
+                logger.error(f"Output sanitization failed: {e}")
+        
+        # Add metadata
+        result['enhanced'] = ENHANCED_INSIGHTS_AVAILABLE and self.enhanced_enabled
+        result['timestamp'] = datetime.now().isoformat()
+        result['user_id'] = user_id[:8] + '...' if len(user_id) > 8 else user_id
+        
+        return result
