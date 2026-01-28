@@ -1,0 +1,107 @@
+{
+  "total": 16,
+  "passed": 0,
+  "failed": 0,
+  "warnings": 0,
+  "errors": 0,
+  "details": [
+    {
+      "test": "Security Utils",
+      "status": "ERROR",
+      "message": "EOL while scanning string literal (security_utils.py, line 170)",
+      "details": null
+    },
+    {
+      "test": "Import Memory System",
+      "status": "PASS",
+      "message": "All memory modules imported",
+      "details": null
+    },
+    {
+      "test": "Short-Term Memory: Window",
+      "status": "PASS",
+      "message": "Maintains context window",
+      "details": null
+    },
+    {
+      "test": "Long-Term Memory: Preferences",
+      "status": "PASS",
+      "message": "Stored and sorted by confidence",
+      "details": null
+    },
+    {
+      "test": "Long-Term Memory: Persistence",
+      "status": "PASS",
+      "message": "Data persisted across instances",
+      "details": null
+    },
+    {
+      "test": "Semantic Memory: Relationships",
+      "status": "PASS",
+      "message": "Stored and queried relationships",
+      "details": null
+    },
+    {
+      "test": "Memory System: Integration",
+      "status": "PASS",
+      "message": "Full system works",
+      "details": null
+    },
+    {
+      "test": "Reasoning Engine",
+      "status": "ERROR",
+      "message": "invalid syntax (reasoning_engine.py, line 340)",
+      "details": null
+    },
+    {
+      "test": "Import Music Toolkit",
+      "status": "PASS",
+      "message": "Toolkit module imported",
+      "details": null
+    },
+    {
+      "test": "Toolkit: Registration",
+      "status": "PASS",
+      "message": "Registered 17 tools",
+      "details": null
+    },
+    {
+      "test": "Toolkit: Execution",
+      "status": "PASS",
+      "message": "Tool executed correctly",
+      "details": null
+    },
+    {
+      "test": "Toolkit: Descriptions",
+      "status": "PASS",
+      "message": "Generated 1404 char description",
+      "details": null
+    },
+    {
+      "test": "Toolkit: Invalid Tool",
+      "status": "PASS",
+      "message": "Rejected invalid tool",
+      "details": null
+    },
+    {
+      "test": "Enhanced Components Integration",
+      "status": "ERROR",
+      "message": "invalid syntax (reasoning_engine.py, line 340)",
+      "details": null
+    },
+    {
+      "test": "LLM Agent Testing",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null
+    },
+    {
+      "test": "Workflow Integration",
+      "status": "ERROR",
+      "message": "No module named 'pandas'",
+      "details": null
+    }
+  ],
+  "error": 5,
+  "pass": 11
+}

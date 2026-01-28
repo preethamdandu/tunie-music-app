@@ -1,0 +1,114 @@
+{
+  "total_tests": 15,
+  "passed": 0,
+  "failed": 0,
+  "errors": 15,
+  "warnings": 0,
+  "test_details": [
+    {
+      "test": "Import Modules",
+      "status": "ERROR",
+      "message": "Failed to import: No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.099072"
+    },
+    {
+      "test": "LLMAgent Initialization",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.099394"
+    },
+    {
+      "test": "Music Insights Edge Cases",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.099832"
+    },
+    {
+      "test": "Streaming Edge Cases",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.100105"
+    },
+    {
+      "test": "Fallback Mechanisms",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.100355"
+    },
+    {
+      "test": "Conversation Memory",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.100622"
+    },
+    {
+      "test": "User Context Handling",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.100902"
+    },
+    {
+      "test": "Response Quality",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.101194"
+    },
+    {
+      "test": "Concurrent Requests",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.101443"
+    },
+    {
+      "test": "Memory Leak Test",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.101681"
+    },
+    {
+      "test": "Error Messages",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.101988"
+    },
+    {
+      "test": "Performance Benchmarks",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.102256"
+    },
+    {
+      "test": "Real-World Scenarios",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.102538"
+    },
+    {
+      "test": "Internationalization",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.102937"
+    },
+    {
+      "test": "Security Vulnerabilities",
+      "status": "ERROR",
+      "message": "No module named 'openai'",
+      "details": null,
+      "timestamp": "2026-01-28T06:45:30.103269"
+    }
+  ]
+}
