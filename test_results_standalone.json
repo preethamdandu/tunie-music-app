@@ -1,0 +1,275 @@
+{
+  "total_tests": 38,
+  "passed": 33,
+  "failed": 0,
+  "errors": 0,
+  "warnings": 5,
+  "test_details": [
+    {
+      "test": "Empty Question",
+      "status": "PASS",
+      "message": "Provided fallback response",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306145"
+    },
+    {
+      "test": "None Values",
+      "status": "PASS",
+      "message": "Handled None inputs",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306153"
+    },
+    {
+      "test": "Long Question (2500+ words)",
+      "status": "PASS",
+      "message": "Handled long input",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306248"
+    },
+    {
+      "test": "Special Characters & Unicode",
+      "status": "PASS",
+      "message": "Handled special chars",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306280"
+    },
+    {
+      "test": "SQL Injection",
+      "status": "WARNING",
+      "message": "May not have sanitized input",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306289"
+    },
+    {
+      "test": "XSS Attack",
+      "status": "WARNING",
+      "message": "Script tag may be present",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306300"
+    },
+    {
+      "test": "Mood: 'I'm feeling happy'",
+      "status": "PASS",
+      "message": "Contains 3/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306315"
+    },
+    {
+      "test": "Mood: 'I'm sad today'",
+      "status": "PASS",
+      "message": "Contains 3/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306326"
+    },
+    {
+      "test": "Mood: 'I need energy'",
+      "status": "WARNING",
+      "message": "Only 1/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306339"
+    },
+    {
+      "test": "Mood: 'I want to relax'",
+      "status": "PASS",
+      "message": "Contains 2/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306350"
+    },
+    {
+      "test": "Mood: 'I'm anxious'",
+      "status": "WARNING",
+      "message": "Only 1/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306362"
+    },
+    {
+      "test": "Genre: jazz",
+      "status": "PASS",
+      "message": "Response mentions jazz",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306375"
+    },
+    {
+      "test": "Genre: hip-hop",
+      "status": "PASS",
+      "message": "Response mentions hip-hop",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306385"
+    },
+    {
+      "test": "Genre: classical",
+      "status": "PASS",
+      "message": "Response mentions classical",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306395"
+    },
+    {
+      "test": "Genre: rock",
+      "status": "PASS",
+      "message": "Response mentions rock",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306407"
+    },
+    {
+      "test": "Genre: electronic",
+      "status": "PASS",
+      "message": "Response mentions electronic",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306418"
+    },
+    {
+      "test": "Activity: 'Music for workout'",
+      "status": "PASS",
+      "message": "3/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306432"
+    },
+    {
+      "test": "Activity: 'What should I listen to while '",
+      "status": "PASS",
+      "message": "3/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306444"
+    },
+    {
+      "test": "Activity: 'Music for sleeping'",
+      "status": "PASS",
+      "message": "3/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306456"
+    },
+    {
+      "test": "Activity: 'Party playlist'",
+      "status": "PASS",
+      "message": "2/3 keywords",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306467"
+    },
+    {
+      "test": "Activity: 'Meditation music'",
+      "status": "WARNING",
+      "message": "Only 1 keyword",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306479"
+    },
+    {
+      "test": "Artist: Drake",
+      "status": "PASS",
+      "message": "Response mentions drake",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306496"
+    },
+    {
+      "test": "Artist: Beatles",
+      "status": "PASS",
+      "message": "Response mentions beatles",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306507"
+    },
+    {
+      "test": "Artist: Taylor Swift",
+      "status": "PASS",
+      "message": "Response mentions taylor swift",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306519"
+    },
+    {
+      "test": "Artist: Kendrick Lamar",
+      "status": "PASS",
+      "message": "Response mentions kendrick lamar",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306531"
+    },
+    {
+      "test": "Follow-up: Jazz Context",
+      "status": "PASS",
+      "message": "Detected follow-up with context",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306543"
+    },
+    {
+      "test": "Follow-up: Workout Context",
+      "status": "PASS",
+      "message": "Maintained workout context",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306552"
+    },
+    {
+      "test": "Follow-up: No History",
+      "status": "PASS",
+      "message": "Handled follow-up without context",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306561"
+    },
+    {
+      "test": "Personalization: Rich Context",
+      "status": "PASS",
+      "message": "Acknowledged user context",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306575"
+    },
+    {
+      "test": "Personalization: No Context",
+      "status": "PASS",
+      "message": "Provided generic recommendation",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306583"
+    },
+    {
+      "test": "Non-Music: 'What is the capital of France?'",
+      "status": "PASS",
+      "message": "Redirected to music",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306596"
+    },
+    {
+      "test": "Non-Music: 'How do I cook pasta?'",
+      "status": "PASS",
+      "message": "Redirected to music",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306607"
+    },
+    {
+      "test": "Non-Music: 'Tell me about quantum physics'",
+      "status": "PASS",
+      "message": "Redirected to music",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306618"
+    },
+    {
+      "test": "Non-Music: 'What's the weather today?'",
+      "status": "PASS",
+      "message": "Redirected to music",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306626"
+    },
+    {
+      "test": "Performance: 100 Simple Queries",
+      "status": "PASS",
+      "message": "0.000s (0.0ms avg)",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.306914"
+    },
+    {
+      "test": "Performance: 10 Complex Queries",
+      "status": "PASS",
+      "message": "0.000s (0.0ms avg)",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.307008"
+    },
+    {
+      "test": "Stress: 50 Rapid Queries",
+      "status": "PASS",
+      "message": "Completed in 0.000s",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.307166"
+    },
+    {
+      "test": "Stress: 1000 Queries",
+      "status": "PASS",
+      "message": "No memory issues",
+      "details": null,
+      "timestamp": "2026-01-28T06:52:30.313713"
+    }
+  ]
+}

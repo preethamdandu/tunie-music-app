@@ -1,0 +1,795 @@
+{
+  "total": 157,
+  "passed": 0,
+  "failed": 0,
+  "warnings": 0,
+  "details": [
+    {
+      "test": "10MB Input",
+      "status": "PASS",
+      "message": "Handled massive input"
+    },
+    {
+      "test": "Unicode Hell",
+      "status": "PASS",
+      "message": "Handled 30k+ Unicode chars"
+    },
+    {
+      "test": "Control Characters",
+      "status": "PASS",
+      "message": "Handled control chars"
+    },
+    {
+      "test": "Binary Data",
+      "status": "PASS",
+      "message": "Handled binary input"
+    },
+    {
+      "test": "Recursive Structure",
+      "status": "PASS",
+      "message": "Handled nested dict"
+    },
+    {
+      "test": "Mixed Encodings",
+      "status": "PASS",
+      "message": "Handled multi-encoding"
+    },
+    {
+      "test": "Null Bytes",
+      "status": "PASS",
+      "message": "Handled null bytes"
+    },
+    {
+      "test": "Format String Attack",
+      "status": "PASS",
+      "message": "Neutralized format attack"
+    },
+    {
+      "test": "Integer Overflow",
+      "status": "PASS",
+      "message": "Handled overflow attempt"
+    },
+    {
+      "test": "Regex DoS",
+      "status": "PASS",
+      "message": "Handled regex DoS"
+    },
+    {
+      "test": "Mood: happy",
+      "status": "PASS",
+      "message": "Response length: 96"
+    },
+    {
+      "test": "Mood: sad",
+      "status": "PASS",
+      "message": "Response length: 97"
+    },
+    {
+      "test": "Mood: angry",
+      "status": "PASS",
+      "message": "Response length: 123"
+    },
+    {
+      "test": "Mood: anxious",
+      "status": "PASS",
+      "message": "Response length: 125"
+    },
+    {
+      "test": "Mood: depressed",
+      "status": "PASS",
+      "message": "Response length: 127"
+    },
+    {
+      "test": "Mood: excited",
+      "status": "PASS",
+      "message": "Response length: 125"
+    },
+    {
+      "test": "Mood: bored",
+      "status": "PASS",
+      "message": "Response length: 123"
+    },
+    {
+      "test": "Mood: lonely",
+      "status": "PASS",
+      "message": "Response length: 124"
+    },
+    {
+      "test": "Mood: nostalgic",
+      "status": "PASS",
+      "message": "Response length: 127"
+    },
+    {
+      "test": "Mood: romantic",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: energetic",
+      "status": "PASS",
+      "message": "Response length: 97"
+    },
+    {
+      "test": "Mood: tired",
+      "status": "PASS",
+      "message": "Response length: 123"
+    },
+    {
+      "test": "Mood: stressed",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: confident",
+      "status": "PASS",
+      "message": "Response length: 127"
+    },
+    {
+      "test": "Mood: insecure",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: hopeful",
+      "status": "PASS",
+      "message": "Response length: 125"
+    },
+    {
+      "test": "Mood: hopeless",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: grateful",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: jealous",
+      "status": "PASS",
+      "message": "Response length: 125"
+    },
+    {
+      "test": "Mood: peaceful",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: chaotic",
+      "status": "PASS",
+      "message": "Response length: 125"
+    },
+    {
+      "test": "Mood: motivated",
+      "status": "PASS",
+      "message": "Response length: 127"
+    },
+    {
+      "test": "Mood: unmotivated",
+      "status": "PASS",
+      "message": "Response length: 129"
+    },
+    {
+      "test": "Mood: creative",
+      "status": "PASS",
+      "message": "Response length: 126"
+    },
+    {
+      "test": "Mood: focused",
+      "status": "PASS",
+      "message": "Response length: 100"
+    },
+    {
+      "test": "Genre: jazz",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: blues",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: rock",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: pop",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: hip-hop",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: rap",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: r&b",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: soul",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: funk",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: disco",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: house",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: techno",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: trance",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: dubstep",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: edm",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: classical",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: opera",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: country",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: folk",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: bluegrass",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: reggae",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: ska",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: punk",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: metal",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: grunge",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: indie",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: alternative",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: emo",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: k-pop",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: j-pop",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: latin",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: salsa",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: bossa nova",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: flamenco",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: ambient",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: lo-fi",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: chillwave",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: vaporwave",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: trap",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Genre: drill",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: workout",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: running",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: gym",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: yoga",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: meditation",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: studying",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: working",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: coding",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: reading",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: writing",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: cooking",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: cleaning",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: driving",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: commuting",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: sleeping",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: waking up",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: party",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: dancing",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: gaming",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: relaxing",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: showering",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: eating",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: walking",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Activity: hiking",
+      "status": "PASS",
+      "message": "Got response"
+    },
+    {
+      "test": "Security: SQL Injection",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: SQL Boolean",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: SQL Comment",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: SQL Union",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: XSS Script",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: XSS Image",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: XSS Iframe",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: XSS JavaScript",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: Path Traversal",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: Path Traversal Alt",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: Log4j",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: Template Injection",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: Python Template",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: Python Code Injection",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: Eval Injection",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: Exec Injection",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: XXE",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: SSI Injection",
+      "status": "WARNING",
+      "message": "Attack may be present"
+    },
+    {
+      "test": "Security: Null Byte",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "Security: CRLF Injection",
+      "status": "PASS",
+      "message": "Attack neutralized"
+    },
+    {
+      "test": "10k Rapid Queries",
+      "status": "PASS",
+      "message": "0.02s (0.0ms avg)"
+    },
+    {
+      "test": "1k Concurrent Queries",
+      "status": "PASS",
+      "message": "0.00s, all succeeded"
+    },
+    {
+      "test": "100k Memory Stress",
+      "status": "PASS",
+      "message": "No memory issues"
+    },
+    {
+      "test": "Empty+Unicode+Special",
+      "status": "PASS",
+      "message": "Handled combo"
+    },
+    {
+      "test": "Long+Unicode+Malicious",
+      "status": "PASS",
+      "message": "Handled combo"
+    },
+    {
+      "test": "None+Empty+Whitespace",
+      "status": "PASS",
+      "message": "Handled combo"
+    },
+    {
+      "test": "All Special Chars",
+      "status": "PASS",
+      "message": "Handled special"
+    },
+    {
+      "test": "Mixed Case",
+      "status": "PASS",
+      "message": "Case-insensitive matching works"
+    },
+    {
+      "test": "Chaos: Urgent request",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Casual/vague",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: All caps urgent",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Indecisive",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Text speak",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Only emojis",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Completely empty",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Only spaces",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Excessive newlines",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "Chaos: Excessive punctuation",
+      "status": "PASS",
+      "message": "Handled gracefully"
+    },
+    {
+      "test": "I18N: Japanese",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: French",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Spanish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Russian",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Arabic",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Hindi",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Chinese",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: German",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Danish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Finnish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Greek",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Hebrew",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Korean",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Swedish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Turkish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Ukrainian",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Vietnamese",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: German",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Spanish",
+      "status": "PASS",
+      "message": "Handled non-English"
+    },
+    {
+      "test": "I18N: Portuguese",
+      "status": "PASS",
+      "message": "Handled non-English"
+    }
+  ],
+  "pass": 148,
+  "warning": 9
+}
