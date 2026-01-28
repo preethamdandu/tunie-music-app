@@ -337,7 +337,7 @@ class ReasoningEngine:
         steps.append({
             'step': 1,
             'action': 'Identifying the issue',
-            'description': 'Understanding what's not working',
+            'description': "Understanding what's not working",
             'problem': problem
         })
         
